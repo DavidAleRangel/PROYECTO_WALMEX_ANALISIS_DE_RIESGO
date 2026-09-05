@@ -12,7 +12,7 @@ output:
 ---
 
 # Proyecto Análisis del Riesgo: Walmart de México y Centroamérica (WALMEX)
-### Introducción
+## Introducción
 
 El presente documento tiene como objetivo realizar un análisis fundamental y de riesgo de Walmart de México y Centroamérica (WALMEX), emisora perteneciente al sector de comercio minorista y listada en la Bolsa Mexicana de Valores. 
 
