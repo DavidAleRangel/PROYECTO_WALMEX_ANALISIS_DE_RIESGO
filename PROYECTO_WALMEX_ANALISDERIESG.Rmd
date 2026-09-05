@@ -1,0 +1,352 @@
+---
+title: "Proyecto Análisis del Riesgo: Walmart de México y Centroamérica (WALMEX)"
+author: "Paulo Benavides, David Rangel, Alan Alamaraz y Hector Fregoso"
+date: "2026-09-05"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    theme: cosmo
+    df_print: paged
+---
+
+# Proyecto Análisis del Riesgo: Walmart de México y Centroamérica (WALMEX)
+## Introducción
+
+El presente documento tiene como objetivo realizar un análisis fundamental y de riesgo de Walmart de México y Centroamérica (WALMEX), emisora perteneciente al sector de comercio minorista y listada en la Bolsa Mexicana de Valores. 
+
+La finalidad de esta primera entrega es comprender el negocio que respalda al activo financiero antes de aplicar posteriormente herramientas cuantitativas de medición y modelación del riesgo.  
+
+El análisis utiliza principalmente información financiera reportada por Walmex, incluyendo sus informes anuales y trimestrales, así como información de la Bolsa Mexicana de Valores y de la Comisión Federal de Competencia Económica (COFECE). 
+
+La información histórica permitirá caracterizar a Walmex como activo financiero y establecer una expectativa inicial respecto a su comportamiento ante diferentes escenarios económicos. Esta caracterización servirá como base para las siguientes etapas del proyecto, en las cuales se estudiará cuantitativamente el riesgo y comportamiento de la acción.
+
+## Descripción general del activo y negocio
+
+### Naturaleza del activo
+Walmart de México y Centroamérica, S.A.B. de C.V. es una empresa pública perteneciente al sector de comercio minorista. Su clave de cotización en la Bolsa Mexicana de Valores es **WALMEX**. 
+
+La acción representa una participación en el capital de la empresa, por lo que el inversionista participa en los resultados económicos futuros de la compañía y está expuesto tanto a la generación de utilidades como a las variaciones en la valuación de mercado. 
+
+Desde una perspectiva de riesgo, WALMEX puede considerarse un activo perteneciente a un negocio relativamente defensivo debido a que una parte importante de sus ventas corresponde a productos de consumo básico. Sin embargo, esto no significa que la acción esté libre de riesgo. 
+
+### Historia y evolución
+Los antecedentes de Walmex se remontan a 1958, cuando inició operaciones la cadena Aurrera en México. 
+
+En 1991 se estableció una asociación con Walmart Stores para desarrollar el formato Sam's Club en México. Posteriormente, en 1997 Walmart adquirió el control mayoritario de la empresa. 
+
+En 2010 se produjo una expansión regional importante mediante la adquisición de las operaciones de Walmart en Centroamérica. 
+
+Desde entonces, la empresa ha evolucionado de un modelo tradicional de tiendas físicas hacia un modelo omnicanal que combina establecimientos físicos, comercio electrónico y servicios digitales. 
+
+Actualmente Walmex opera en seis países: México, Costa Rica, El Salvador, Guatemala, Honduras y Nicaragua. 
+
+### Modelo de negocio
+El modelo de negocio se basa principalmente en ofrecer una amplia variedad de productos a precios competitivos, buscando mantener altos volúmenes de venta y una elevada rotación de inventarios. 
+
+Entre sus principales formatos se encuentran: 
+
+- Bodega Aurrera. 
+- Walmart Supercenter. 
+- Walmart Express. 
+- Sam's Club. 
+- Tiendas de descuento. 
+
+La compañía también ha desarrollado un ecosistema digital compuesto por negocios como Bait, Cashi y Walmart Connect. 
+
+De acuerdo con la información corporativa más reciente, al 30 de junio de 2026 Walmex contaba con aproximadamente 235,100 asociados, 4,305 unidades comerciales, 33 centros de distribución y presencia en 773 ciudades. 
+
+### Presencia geográfica
+México constituye el principal mercado de la compañía. 
+
+Al cierre de 2025, aproximadamente 83% de los ingresos consolidados provenían de México y 17% de Centroamérica. La empresa reportó ingresos totales de $1,011,598 millones de pesos durante 2025. 
+
+### Infraestructura y escala
+Durante 2025 Walmex reportó: 
+
+- 4,265 tiendas. 
+- 33 centros de distribución. 
+- 240,779 asociados. 
+- Presencia en seis países. 
+- $1,011,598 millones de pesos de ingresos totales. 
+
+La escala constituye una ventaja competitiva importante debido a que permite negociar con proveedores, distribuir costos fijos entre un elevado volumen de ventas y mantener una amplia red logística. 
+
+### Competencia
+Walmex enfrenta competencia en prácticamente todos sus segmentos. 
+
+Entre sus principales competidores se encuentran: 
+- Chedraui. 
+- Soriana. 
+- La Comer. 
+- H-E-B. 
+- Costco. 
+- Tiendas 3B. 
+- Oxxo. 
+- Amazon. 
+- Mercado Libre. 
+
+El principal riesgo competitivo consiste en que una mayor presión sobre precios obligue a Walmex a sacrificar margen para conservar participación de mercado. 
+
+La propia empresa reconoce que el sector retail y clubes de precios es altamente competitivo y que cambios en la intensidad competitiva podrían afectar sus resultados financieros.
+
+## Análisis de estados financieros
+Para analizar la evolución financiera se utilizan los ejercicios 2023, 2024 y 2025.
+
+### Ingresos
+Los ingresos totales pasaron de aproximadamente **$886,523 millones** en 2023 a **$958,507 millones** en 2024 y **$1,011,598 millones** en 2025. Esto representa un crecimiento acumulado aproximado de **14.1%** entre 2023 y 2025.
+
+### Margen Bruto
+El margen bruto mide cuánto queda de los ingresos después de considerar directamente el costo de los productos vendidos.
+
+La fórmula es:
+$$Margen Bruto=\frac{Ingresos Totales}{Utilidad Bruta}×100$$
+El margen bruto pasó de aproximadamente **23.8%** en 2023 a **24.1%** en 2024 y **24.2%** en 2025.
+
+Esto representa una señal favorable porque Walmex logró mejorar ligeramente la rentabilidad después del costo de ventas a pesar de operar bajo un entorno de presión sobre precios.
+
+### Margen operativo
+El margen operativo mide la proporción de los ingresos que permanece después de considerar los costos y gastos relacionados con la operación del negocio.
+
+$$Margen Operativo=\frac{Ingresos Totales}{Utilidad Operativa}×100$$
+El margen operativo disminuyó de aproximadamente **8.3%** en 2023 a **8.1%** en 2024 y **7.8%** en 2025.
+
+Esta reducción debe considerarse como una señal de alerta moderada. Aunque Walmex continúa generando una utilidad operativa considerable, sus gastos generales crecieron más rápidamente que sus ingresos durante 2025.
+
+### Margen neto
+El margen neto mide qué porcentaje de los ingresos finalmente se convierte en utilidad después de considerar gastos financieros e impuestos.
+
+$$Margen Neto=\frac{Ingresos Totales}{Utilidad Neta}×100$$
+El margen neto disminuyó de aproximadamente **5.8%** en 2023 a **5.6%** en 2024 y **4.9%** en 2025.
+
+La reducción es más importante que la observada en el margen operativo. Durante 2025 la utilidad neta cayó **7.3%**, a pesar de que los ingresos crecieron **5.5%**.
+
+Una de las razones señaladas por la empresa fue una mayor tasa efectiva de impuestos.
+
+### EBITDA y generación operativa
+El EBITDA permite aproximar la capacidad de generación operativa antes de intereses, impuestos, depreciación y amortización.
+
+$$Margen EBITDA=\frac{Ingresos Totales}{EBITDA}×100$$
+El EBITDA aumentó de **$93,853 millones** en 2023 a **$99,998 millones** en 2024 y **$103,447 millones** en 2025.
+
+No obstante, el margen EBITDA disminuyó de **10.6%** en 2023 a **10.4%** en 2024 y **10.2%** en 2025.
+
+**Walmex sigue creciendo en términos absolutos, pero existe presión sobre la rentabilidad relativa de sus operaciones**.
+
+## Indicadores financieros claves
+### ROE
+El ROE mide la rentabilidad obtenida sobre los recursos aportados por los accionistas.
+
+$$ ROE = \frac{Utilidad\ Neta} {Capital\ Contable\ Promedio} \times100 $$
+
+ROE aproximado de Walmex para 2025 fue de **21.3%**.
+
+Esto significa que por cada **$100** de capital contable promedio la empresa generó aproximadamente **$21.30** de utilidad neta.
+
+### ROA
+El ROA mide la capacidad de los activos para generar utilidad.
+
+$$ROA=\frac{Activos Promedio}{Utilidad Neta}×100$$
+El ROA aproximado fue de **9.87%**.
+
+Este resultado muestra una capacidad importante para generar utilidades a partir de la base de activos de la compañía.
+
+### Deuda / Capital
+Para efectos de análisis de riesgo se utilizará:
+
+$$ Deuda/Capital = \frac{Deuda} {Deuda + Capital} \times100 $$
+
+El indicador es aproximadamente **34.83%**.
+
+Esto indica que la estructura financiera presenta una proporción relativamente limitada de deuda respecto a la combinación de deuda y capital
+
+### Margen EBITDA
+El margen EBITDA de 2025 fue aproximadamente:
+
+$$ Margen\ EBITDA = \frac{103,447}{1,011,598} \times100 \approx10.2\% $$
+
+La compañía reportó oficialmente un margen EBITDA de **10.2%** en 2025.
+
+En conjunto, WALMEX muestra una posición financiera sólida: mantiene crecimiento en ventas, buenos niveles de rentabilidad y un endeudamiento relativamente moderado. Sin embargo, el principal foco de riesgo está en la reducción de los márgenes operativo y neto, ya que la empresa está creciendo en ingresos, pero una menor proporción de esas ventas se convierte en utilidad.
+
+Por ello, el riesgo financiero de WALMEX no parece estar concentrado en problemas de solvencia, sino en su capacidad para controlar costos, mantener márgenes y convertir su crecimiento comercial en crecimiento real de utilidades. Esta será una variable importante para entender posteriormente el comportamiento y la volatilidad de la acción.
+
+
+## Cálculo del EPS trimestral 2019-2025 
+La utilidad por acción o EPS/UPA representa la utilidad atribuible a cada acción. 
+
+La fórmula general es: 
+$$EPS=\frac{Utilidad Neta atribuible a los accionistas}{Número promedio ponderado de acciones}$$ 
+Para este análisis se utilizará la UPA reportada por Walmex en sus informes financieros trimestrales. 
+
+Para 2025, Walmex reportó una UPA anual de aproximadamente **$2.87 pesos**, frente a **$3.09 pesos** en 2024. 
+
+La evolución del EPS muestra que Walmex tiene una generación de utilidades relativamente estable en comparación con empresas pertenecientes a sectores más cíclicos. 
+
+### Dividendos y Split
+Walmex mantiene una política de distribución de dividendos relativamente estable. La compañía señala que anualmente destina aproximadamente 40% de las utilidades del año anterior al pago del dividendo ordinario. 
+
+En 2025 el dividendo total fue de aproximadamente **$1.69 pesos por acción**, integrado por: 
+
+- Dividendo ordinario: **$1.30**. 
+- Dividendo extraordinario: **$0.39**. 
+
+El dividendo se pagó en dos exhibiciones durante noviembre y diciembre de 2025. 
+
+La existencia de dividendos extraordinarios demuestra que la empresa puede devolver capital adicional a los accionistas cuando existe una posición financiera favorable. 
+
+Sin embargo, desde el punto de vista de riesgo, un dividendo extraordinario no debe considerarse un flujo recurrente garantizado. Para una evaluación conservadora únicamente debe incorporarse el dividendo ordinario como referencia sostenible.
+
+### Split
+El último split de Walmex ocurrió el 23 de abril de 2010, en una proporción de: 
+
+$$ 1\ acción\ antigua \rightarrow 2\ acciones\ nuevas $$
+
+El split no representa por sí mismo una creación de valor económico para el accionista, debido a que el número de acciones aumenta proporcionalmente mientras que el precio por acción se ajusta. 
+
+## Identificación de Riesgo
+### Riesgo operativo 
+El principal riesgo operativo está relacionado con la escala y complejidad de la operación. 
+ 
+Walmex administra miles de unidades comerciales y una extensa red de distribución. Esto genera exposición a: 
+- interrupciones logísticas 
+- disponibilidad de mercancías 
+- incremento de costos de transporte 
+- problemas de seguridad 
+- fallas tecnológicas 
+- ciberseguridad 
+- seguridad alimentaria 
+- disponibilidad de proveedores. 
+
+La empresa reconoce que los problemas relacionados con proveedores, disponibilidad de mercancías, transporte, inflación, tipo de cambio y seguridad de los productos pueden afectar su desempeño financiero. 
+
+### Riesgo competitivo 
+La competencia representa uno de los riesgos estructurales más importantes. 
+
+El sector minorista mexicano cuenta con participantes tradicionales y nuevos competidores digitales. Una mayor competencia puede obligar a Walmex a reducir precios o aumentar inversiones en tecnología, tiendas y promociones. 
+
+El riesgo es especialmente relevante debido al modelo de negocio de Walmex, cuya propuesta central depende de mantener precios competitivos. 
+
+### Riesgo macroeconómico 
+Los principales riesgos macroeconómicos identificados son: 
+
+#### Inflación 
+Una inflación elevada puede reducir el poder adquisitivo de los consumidores y elevar los costos laborales, logísticos y de mercancías. 
+
+La empresa reconoce que la inflación puede afectar tanto la demanda como sus costos. 
+
+#### Tasa de interés 
+Aunque Walmex tiene una exposición limitada al endeudamiento financiero, tasas elevadas pueden afectar: 
+- costo de oportunidad del capital 
+- valuación de la acción 
+- consumo de los hogares 
+- rendimiento relativo frente a instrumentos de renta fija. 
+
+#### Tipo de cambio 
+Walmex opera en México y Centroamérica y mantiene relaciones comerciales con proveedores internacionales. 
+
+Por lo tanto, movimientos importantes del peso frente al dólar pueden afectar los costos de productos importados y otros resultados financieros. 
+
+La empresa identifica explícitamente el riesgo cambiario dentro de sus principales riesgos financieros. 
+
+#### Consumo 
+Una desaceleración económica puede afectar el tráfico de clientes y el crecimiento de las ventas. 
+
+Este riesgo adquiere especial importancia en 2026. Durante el segundo trimestre de 2026 Walmex reportó crecimiento consolidado de ingresos de solamente 1.9%, mientras que el tráfico en México disminuyó 1.1%. 
+
+### Riesgo financiero 
+Los principales riesgos financieros son: 
+- riesgo cambiario 
+- riesgo de liquidez 
+- riesgo de tasas de interés 
+- riesgo de deterioro de márgenes 
+- riesgo asociado con arrendamientos. 
+
+La empresa identifica formalmente el riesgo cambiario, de tasas y liquidez dentro de su administración de riesgos financieros. 
+
+No obstante, el riesgo de apalancamiento es relativamente reducido debido a que Walmex no mantiene una estructura significativa de deuda bancaria con costo.
+
+## Conclusión
+Desde una perspectiva de análisis de riesgo bancario, Walmex puede caracterizarse como una empresa **sólida, madura y en una etapa de expansión moderada**, más que como una compañía en una fase de crecimiento acelerado. 
+
+La principal evidencia a favor de esta caracterización se encuentra en su escala, posición competitiva, capacidad de generación de ingresos y fortaleza financiera. Entre 2023 y 2025 los ingresos aumentaron de aproximadamente **$886,523 millones** a **$1,011,598 millones**, mientras que el EBITDA pasó de **$93,853 millones** a **$103,447 millones**. 
+
+Además, la empresa presenta una estructura financiera relativamente conservadora. El ROE aproximado de **21.3%**, el ROA cercano a **10.1%** y una relación deuda/EBITDA cercana a **0.78** veces muestran una capacidad considerable para generar resultados y atender sus obligaciones financieras.
+
+Sin embargo, el análisis también muestra señales que deben vigilarse. En 2025 la utilidad neta disminuyó **7.3%**, mientras que el margen neto se redujo a aproximadamente **4.9%**. Asimismo, el margen EBITDA disminuyó gradualmente desde **10.6%** en 2023 hasta **10.2%** en 2025. 
+
+Por lo tanto, el principal riesgo de Walmex no parece estar relacionado con un elevado apalancamiento, sino con la capacidad de mantener sus márgenes frente a un entorno competitivo, inflacionario y de menor crecimiento del consumo. 
+
+Para el corto y mediano plazo deben vigilarse especialmente cuatro factores: consumo interno, competencia, regulación y presión sobre márgenes. El riesgo regulatorio asociado con COFECE también debe mantenerse bajo seguimiento debido a sus posibles implicaciones económicas y reputacionales. 
+
+En cuanto al comportamiento esperado de la acción, los fundamentos sugieren un perfil de **riesgo moderado**, con características defensivas frente a empresas altamente cíclicas. La naturaleza de los productos vendidos y la estabilidad histórica del negocio pueden contribuir a reducir la sensibilidad ante determinados choques económicos.
+
+Sin embargo, esto no significa que WALMEX sea una acción de baja volatilidad en cualquier circunstancia. Los cambios en expectativas de crecimiento, márgenes, regulación, tasas de interés, inflación y consumo pueden provocar movimientos relevantes en su precio. 
+
+Por ello, la hipótesis inicial para las siguientes etapas del proyecto es que WALMEX debería presentar una volatilidad estructuralmente menor que empresas con alto apalancamiento o fuerte exposición a sectores cíclicos, pero con sensibilidad importante ante **choques macroeconómicos, regulatorios y cambios en las expectativas de crecimiento**. 
+
+## Fuentes Consultadas
+1. Walmart de México y Centroamérica. Información financiera anual.
+```{r}
+htmltools::a( 
+  "Walmex - Información financiera anual", 
+  href = "https://www.walmex.mx/informacion-financiera/anual.html", 
+  target = "_blank" 
+)
+```
+
+2. Walmart de México y Centroamérica. Información financiera trimestral.
+```{r}
+htmltools::a( 
+  "Walmex - Información financiera trimestral", 
+  href = "https://www.walmex.mx/informacion-financiera/trimestral.html", 
+  target = "_blank" 
+) 
+```
+
+3. Walmart de México y Centroamérica. Dividendos, recompra y split. 
+```{r}
+htmltools::a( 
+  "Walmex - Dividendos, recompra y split", 
+  href = "https://www.walmex.mx/accion-walmex/dividendo-recompra-split.html", 
+  target = "_blank" 
+)
+```
+
+4. Bolsa Mexicana de Valores. Información financiera de Walmex.
+```{r}
+htmltools::a( 
+  "Bolsa Mexicana de Valores", 
+  href = "https://www.bmv.com.mx/", 
+  target = "_blank" 
+)
+```
+
+5. Comisión Federal de Competencia Económica. Resolución relacionada con Walmart.
+```{r}
+htmltools::a( 
+  "COFECE - Walmart", 
+  href = "https://www.cofece.mx/cofece-multa-a-walmart-y-le-ordena-eliminar-practicas-abusivas-contra-sus-proveedores/", 
+  target = "_blank" 
+) 
+```
+
+6. Walmart de México y Centroamérica. Investigación COFECE
+```{r}
+htmltools::a( 
+  "Walmex - Investigación COFECE", 
+  href = "https://www.walmex.mx/comunicados-y-eventos/investigacion-cofece.html", 
+  target = "_blank" 
+) 
+```
+
+7. EMIS - Emerging Markets Data, Research & Intelligence. 
+```{r}
+htmltools::a( 
+  "EMIS", 
+  href = "https://www.emis.com/en", 
+  target = "_blank" 
+)
+```
+
