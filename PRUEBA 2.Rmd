@@ -1,7 +1,0 @@
----
-title: "PRUEBA 2"
-author: "David Rangel"
-date: "2026-09-05"
-output: html_document
----
-PRUEBA 2
