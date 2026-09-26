@@ -101,7 +101,8 @@ Los ingresos totales pasaron de aproximadamente **$886,523 millones** en 2023 a 
 El margen bruto mide cuánto queda de los ingresos después de considerar directamente el costo de los productos vendidos.
 
 La fórmula es:
-$$Margen Bruto=\frac{Ingresos Totales}{Utilidad Bruta}×100$$
+$$Margen Bruto=\frac{Utilidad Bruta}{Ingresos Totales}×100$$
+
 El margen bruto pasó de aproximadamente **23.8%** en 2023 a **24.1%** en 2024 y **24.2%** en 2025.
 
 Esto representa una señal favorable porque Walmex logró mejorar ligeramente la rentabilidad después del costo de ventas a pesar de operar bajo un entorno de presión sobre precios.
@@ -109,7 +110,7 @@ Esto representa una señal favorable porque Walmex logró mejorar ligeramente la
 ### Margen operativo
 El margen operativo mide la proporción de los ingresos que permanece después de considerar los costos y gastos relacionados con la operación del negocio.
 
-$$Margen Operativo=\frac{Ingresos Totales}{Utilidad Operativa}×100$$
+$$Margen Operativo=\frac{Utilidad Operativa}{Ingresos Totales}×100$$
 El margen operativo disminuyó de aproximadamente **8.3%** en 2023 a **8.1%** en 2024 y **7.8%** en 2025.
 
 Esta reducción debe considerarse como una señal de alerta moderada. Aunque Walmex continúa generando una utilidad operativa considerable, sus gastos generales crecieron más rápidamente que sus ingresos durante 2025.
@@ -117,7 +118,8 @@ Esta reducción debe considerarse como una señal de alerta moderada. Aunque Wal
 ### Margen neto
 El margen neto mide qué porcentaje de los ingresos finalmente se convierte en utilidad después de considerar gastos financieros e impuestos.
 
-$$Margen Neto=\frac{Ingresos Totales}{Utilidad Neta}×100$$
+$$Margen Neto=\frac{Utilidad Neta}{Ingresos Totales}×100$$
+
 El margen neto disminuyó de aproximadamente **5.8%** en 2023 a **5.6%** en 2024 y **4.9%** en 2025.
 
 La reducción es más importante que la observada en el margen operativo. Durante 2025 la utilidad neta cayó **7.3%**, a pesar de que los ingresos crecieron **5.5%**.
@@ -127,7 +129,8 @@ Una de las razones señaladas por la empresa fue una mayor tasa efectiva de impu
 ### EBITDA y generación operativa
 El EBITDA permite aproximar la capacidad de generación operativa antes de intereses, impuestos, depreciación y amortización.
 
-$$Margen EBITDA=\frac{Ingresos Totales}{EBITDA}×100$$
+$$Margen EBITDA=\frac{EBITDA}{Ingresos Totales}×100$$
+
 El EBITDA aumentó de **$93,853 millones** en 2023 a **$99,998 millones** en 2024 y **$103,447 millones** en 2025.
 
 No obstante, el margen EBITDA disminuyó de **10.6%** en 2023 a **10.4%** en 2024 y **10.2%** en 2025.
@@ -156,10 +159,26 @@ Este resultado muestra una capacidad importante para generar utilidades a partir
 Para efectos de análisis de riesgo se utilizará:
 
 $$ Deuda/Capital = \frac{Deuda} {Deuda + Capital} \times100 $$
-
 El indicador es aproximadamente **34.83%**.
 
-Esto indica que la estructura financiera presenta una proporción relativamente limitada de deuda respecto a la combinación de deuda y capital
+Esto indica que la estructura financiera presenta una proporción relativamente limitada de deuda respecto a la combinación de deuda y capital.
+
+## Deuda / EBITDA
+
+La relación Deuda/EBITDA permite evaluar aproximadamente cuántos años de EBITDA serían necesarios para cubrir la deuda, suponiendo que el EBITDA se mantuviera constante y que se destinara completamente a dicho objetivo.
+
+La fórmula es:
+
+$$Deuda/EBITDA =\frac{Deuda\ Total}{EBITDA}$$
+
+Para 2025:
+
+$$Deuda/EBITDA =\frac{Deuda\ Total_{2025}}{103,447}$$
+
+Este indicador debe calcularse utilizando la definición de deuda que se haya establecido para el análisis, por ejemplo, deuda financiera con costo o deuda total incluyendo los pasivos que correspondan.
+
+Un valor inferior a 1.0 veces indicaría que la deuda considerada es inferior a un año de EBITDA. Por ello, este indicador debe analizarse conjuntamente con la definición de deuda utilizada y no únicamente de manera aislada.
+
 
 ### Margen EBITDA
 El margen EBITDA de 2025 fue aproximadamente:
@@ -174,15 +193,20 @@ Por ello, el riesgo financiero de WALMEX no parece estar concentrado en problema
 
 
 ## Cálculo del EPS trimestral 2019-2025 
-La utilidad por acción o EPS/UPA representa la utilidad atribuible a cada acción. 
+La utilidad por acción, conocida como EPS o UPA, representa la utilidad atribuible a cada acción.
 
-La fórmula general es: 
-$$EPS=\frac{Utilidad Neta atribuible a los accionistas}{Número promedio ponderado de acciones}$$ 
-Para este análisis se utilizará la UPA reportada por Walmex en sus informes financieros trimestrales. 
+La fórmula general es:
 
-Para 2025, Walmex reportó una UPA anual de aproximadamente **$2.87 pesos**, frente a **$3.09 pesos** en 2024. 
+$$EPS =\frac{Utilidad\ Neta\ atribuible\ a\ los\ accionistas}{Número\ promedio\ ponderado\ de\ acciones}$$
 
-La evolución del EPS muestra que Walmex tiene una generación de utilidades relativamente estable en comparación con empresas pertenecientes a sectores más cíclicos. 
+Para este análisis se utilizará la UPA reportada por Walmex en sus informes financieros trimestrales.
+
+Walmex publica sus reportes trimestrales y en ellos incluye la UPA correspondiente al periodo reportado. Por ejemplo, en el reporte del tercer trimestre de 2019 se reportó una UPA de $1.527 pesos para el periodo acumulado enero-septiembre. 
+
+De igual manera, para 2024 y 2025 los reportes trimestrales incluyen la UPA correspondiente al periodo reportado. Por ejemplo, en el primer trimestre de 2024 la UPA reportada fue de **$0.756 pesos**, mientras que en el primer trimestre de 2025 fue de **$0.707 pesos**.
+
+Para cumplir correctamente con la indicación de la materia, se debe construir una base con **cada trimestre de 2019 a 2025**, evitando utilizar únicamente los valores anuales.
+
 
 ### Dividendos y Split
 Walmex mantiene una política de distribución de dividendos relativamente estable. La compañía señala que anualmente destina aproximadamente 40% de las utilidades del año anterior al pago del dividendo ordinario. 
@@ -350,3 +374,555 @@ htmltools::a(
 )
 ```
 
+# Análisis de los cambios en el precio y sus causas (Parte 2)
+
+##Introducción:
+
+En la primera entrega describimos el negocio de Walmart de México y Centroamérica (WALMEX) y analizamos su situación financiera. Concluimos que el principal riesgo de la emisora no está en su solvencia, sino en su capacidad para sostener márgenes mientras sus ingresos crecen. En esta segunda entrega pasamos del análisis del negocio al análisis del precio: queremos entender cómo se ha comportado la acción en el mercado y qué hechos del entorno explican sus movimientos más importantes. 
+
+El punto de partida es que el precio de un activo financiero no depende solo de los resultados de la empresa. También responde a choques económicos, políticos y corporativos que los inversionistas no pueden anticipar ni controlar. Para mostrarlo, el documento se organiza en los siguientes apartados: 
+
+- **Exploración de la serie histórica:** Graficamos el precio y los rendimientos de WALMEX, describimos su comportamiento general, identificamos los periodos con movimientos pronunciados y estimamos el máximo drawdown. 
+
+- **Identificación de eventos y explicación de cambios:** Para cada periodo identificado, investigamos los hechos financieros, económicos, políticos y propios de la empresa que pudieron provocar el movimiento. 
+
+- **Relación con el entorno económico:** Comparamos el rendimiento anual de la acción con el crecimiento anual del PIB de México para evaluar si WALMEX sigue el ciclo económico. 
+
+- **Análisis de los periodos más recientes:** Revisamos los eventos del último año y cómo se reflejaron (o no) en el precio. 
+
+- **Conclusión:** Integramos los hallazgos y reflexionamos sobre lo que el ejercicio enseña acerca del riesgo, la incertidumbre y el papel de la nueva información en los mercados. 
+
+Para que los resultados sean verificables, cada indicador se presenta con su definición, su fórmula, el cálculo con los datos y su interpretación. 
+
+## Exploración de la serie histórica 
+
+### Datos y periodo de análisis 
+
+Usamos precios diarios de cierre de la serie WALMEX* en la Bolsa Mexicana de Valores, obtenidos de Yahoo Finance (ticker WALMEX.MX). La emisora cotiza en la BMV desde antes de 2003 (su antecesora, Cifra, ya cotizaba desde la década de 1970), pero la serie diaria pública y ajustada más larga disponible comienza el **2 de enero de 2003**. Por eso el análisis cubre del **2 de enero de 2003 al 30 de junio de 2026** (cierre del primer semestre de 2026): **5,889 sesiones**. 
+
+Trabajamos con dos versiones del precio: 
+
+- **Precio de cierre ajustado por splits:** Es el precio que se observa en la pantalla, corregido por las divisiones de acciones (2 a 1 en febrero de 2006 y 2 a 1 en abril de 2010) para que la serie sea comparable en el tiempo. Lo usamos para describir el nivel del precio. 
+
+- **Precio ajustado por splits y dividendos:** Además de los splits, reinvierte los dividendos pagados. Refleja el rendimiento total que obtuvo el accionista, por lo que es la base de todos los rendimientos y del drawdown de este apartado. Al 30 de junio de 2026 ambas series coinciden (51.26 MXN); hacia atrás, la ajustada es menor porque descuenta los dividendos que se cobraron después. 
+
+Eliminamos 49 registros de días inhábiles (festivos) en los que la fuente repite el precio anterior con volumen cero, porque generarían rendimientos artificiales de 0%. 
+
+### Definiciones y fórmulas 
+Sea $P_t$ el precio ajustado por splits y dividendos al cierre del día $t$. 
+
+**Rendimiento diario simple:** Es el cambio porcentual del precio de un día al siguiente:
+
+$$r_t = \frac{P_t}{P_{t-1}} - 1$$
+
+**Rendimiento acumulado de un periodo:** Es el cambio porcentual entre la fecha inicial a y la fecha final b. Lo usamos para medir cada periodo relevante: 
+
+$$R_{a,b} = \frac{P_b}{P_a} - 1$$
+
+**Drawdown:** Es la caída porcentual del precio respecto al máximo alcanzado hasta ese día (Mₜ). Vale 0 cuando el precio está en un nuevo máximo y es negativo en cualquier otro caso: 
+
+$$DD_t = \frac{P_t}{M_t} - 1, \quad M_t = \max_{s \le t} P_s$$
+
+**Máximo drawdown (MDD):** Es el drawdown más negativo de toda la serie. Mide la mayor pérdida que habría sufrido un inversionista que compró en un máximo y vendió en el peor momento posterior: 
+
+$$MDD = \min_t DD_t$$
+
+
+```{r librerias, message=FALSE, warning=FALSE}
+library(PerformanceAnalytics)
+library(quantmod)
+library(httr)
+library(jsonlite)
+library(xts)
+library(zoo)
+```
+
+
+```{r datos}
+tic_activo <- "WALMEX.MX"
+fecha_inicio <- as.Date("2003-01-01")
+fecha_fin <- as.Date("2026-06-30")
+```
+
+```{r descarga, message=FALSE, warning=FALSE}
+getSymbols(tic_activo, from = fecha_inicio, to = fecha_fin + 1)
+datos <- na.omit(get(tic_activo))
+
+# Quitamos los días festivos: Yahoo repite el precio anterior con volumen 0
+# y eso generaría rendimientos artificiales de 0%
+sum(Vo(datos) == 0)
+datos <- datos[Vo(datos) > 0, ]
+
+precio_cierre <- Cl(datos)
+precio_ajustado <- Ad(datos)
+colnames(precio_cierre) <- "Cierre"
+colnames(precio_ajustado) <- "Ajustado"
+
+nrow(precio_ajustado)
+first(index(precio_ajustado))
+last(index(precio_ajustado))
+```
+
+## 1. Gráfica del precio
+
+```{r grafica precio}
+precios <- merge(precio_cierre, precio_ajustado)
+
+plot(precios,
+     main = "Precio diario de WALMEX",
+     ylab = "MXN por acción",
+     col = c("darkblue", "gray50"),
+     lwd = c(1.2, 1),
+     legend.loc = "topleft",
+     grid.col = "gray90")
+```
+
+Datos para describir el comportamiento general
+
+```{r resumen precio}
+P0 <- as.numeric(first(precio_cierre))
+PT <- as.numeric(last(precio_cierre))
+P_max <- max(precio_cierre)
+
+resumen_precio <- data.frame(
+  Concepto = c("Precio inicial", "Precio final", "Rendimiento acumulado",
+               "Precio máximo", "Fecha del máximo",
+               "Veces que se multiplicó el precio hasta el máximo",
+               "Distancia del precio final al máximo"),
+  Valor = c(round(P0, 2), round(PT, 2),
+            paste0(round((PT / P0 - 1) * 100, 1), "%"),
+            round(P_max, 2),
+            as.character(index(precio_cierre)[which.max(precio_cierre)]),
+            round(P_max / P0, 2),
+            paste0(round((PT / P_max - 1) * 100, 1), "%"))
+)
+resumen_precio
+```
+
+## 2. Gráfica de los rendimientos
+
+```{r rendimientos diarios}
+rend_diario <- na.omit(Return.calculate(precio_ajustado, method = "discrete"))
+colnames(rend_diario) <- "Rendimiento"
+
+plot(index(rend_diario), as.numeric(rend_diario) * 100, type = "h",
+     col = "darkblue", lwd = 0.5,
+     main = "Rendimientos diarios de WALMEX (%)",
+     xlab = "Fecha", ylab = "Rendimiento diario (%)")
+abline(h = 0, col = "gray40")
+```
+
+Los rendimientos diarios oscilan alrededor de cero, pero su amplitud no es constante. Hay etapas tranquilas y otras en las que los movimientos grandes se concentran. El caso más claro es octubre y noviembre de 2008, cuando en pocas semanas se registraron el mejor día de la muestra (+14.1% el 28 de octubre) y uno de los peores (−10.9% el 6 de octubre). 
+
+El peor día de toda la serie (−12.2% el 23 de abril de 2012) no ocurrió en una crisis general, sino en un episodio propio de la empresa. Esto muestra que el precio reacciona tanto a choques de mercado como a información corporativa que el inversionista no puede anticipar. 
+
+## Periodos con movimientos relevantes 
+
+Para que la selección no dependiera solo de la inspección visual, usamos un criterio explícito sobre la serie ajustada. Como caídas tomamos todos los episodios con un drawdown mayor a 20% (ecuación 3) que duraron más de seis meses de pico a valle; hay cuatro. Como alzas tomamos los tramos alcistas más pronunciados entre esas caídas, todos con un rendimiento acumulado mayor a 70%. En total son ocho periodos, que se muestran en la Tabla 1 y en las franjas de la Figura 1. 
+
+Criterio: como caídas tomamos los episodios con drawdown mayor a 20% que duraron más de seis meses
+de pico a valle; como alzas, los tramos alcistas más pronunciados entre esas caídas, todos con un
+rendimiento acumulado mayor a 70%.
+
+```{r periodos}
+periodos <- data.frame(
+  id = 1:8,
+  tipo = c("Alza", "Caída", "Alza", "Caída", "Alza", "Caída", "Alza", "Caída"),
+  inicio = as.Date(c("2003-01-22", "2007-02-07", "2009-03-02", "2012-04-09",
+                     "2015-02-03", "2016-02-05", "2020-09-10", "2022-03-31")),
+  fin = as.Date(c("2007-02-07", "2009-03-02", "2012-04-09", "2014-02-26",
+                  "2015-11-17", "2017-01-23", "2022-03-31", "2025-07-21"))
+)
+
+calcula_periodo <- function(ini, fin) {
+  p_ini <- as.numeric(precio_ajustado[ini])
+  p_fin <- as.numeric(precio_ajustado[fin])
+  c(Meses = round(as.numeric(fin - ini) / 30.44, 1),
+    P_inicio = round(p_ini, 2),
+    P_fin = round(p_fin, 2),
+    Rend_acumulado = round((p_fin / p_ini - 1) * 100, 1))
+}
+
+resultados <- t(mapply(calcula_periodo, periodos$inicio, periodos$fin))
+tabla_periodos <- cbind(periodos, resultados)
+tabla_periodos
+```
+
+- **Periodo 1 · Alza de 22-ene-2003 a 07-feb-2007 (+328.5%):** Es el tramo alcista más largo y fuerte de la muestra: el precio ajustado pasó de 3.47 a 14.87 MXN en 48.5 meses. Termina en el máximo previo a la crisis financiera global. Dentro de este tramo hubo una corrección breve pero fuerte (−24.0% entre el 10 de mayo y el 13 de junio de 2006), recuperada a finales de julio del mismo año. No la contamos como periodo aparte porque duró poco más de un mes. 
+
+- **Periodo 2 · Caída de 07-feb-2007 a 02-mar-2009 (-43.1%):** Es la mayor caída de toda la serie y define el máximo drawdown. Coincide con la crisis financiera global de 2008–2009. Concentra varios de los días extremos de la Figura 2. 
+
+- **Periodo 3 · Alza de 02-mar-2009 a 09-abr-2012 (+233.6%):** Tras tocar fondo, el precio recuperó su máximo previo en solo seis meses (septiembre de 2009) y siguió subiendo hasta triplicarse. En este periodo ocurrió el split 2 a 1 de abril de 2010. 
+
+- **Periodo 4 · Caída de 09-abr-2012 a 26-feb-2014 (-34.9%):** Empieza con el peor día de la serie (−12.2% el 23 de abril de 2012), que coincide con la publicación de acusaciones de sobornos en la expansión de la empresa en México. Después de ese choque, el precio siguió bajando de forma gradual durante casi dos años. Recuperar el máximo de abril de 2012 tomó hasta agosto de 2015. 
+
+- **Periodo 5 · Alza de 03-feb-2015 a 17-nov-2015 (+71.1%):** Es el alza más rápida de la muestra: 71.1% en 9.4 meses. Arranca con uno de los mejores días de la serie (+8.8% el 6 de febrero de 2015). 
+
+- **Periodo 6 · Caída de 05-feb-2016 a 23-ene-2017 (-22.9%):** El tramo más pronunciado ocurre al final: el 10 de noviembre de 2016, dos días después de la elección presidencial en Estados Unidos, la acción cayó 7.6% en una sola sesión. Es un ejemplo de choque político internacional sobre una empresa cuyas ventas son casi todas domésticas. 
+
+- **Periodo 7 · Alza de 10-sep-2020 a 31-mar-2022 (+70.9%):** Después de la caída asociada a la pandemia de COVID-19 en marzo de 2020, que fue breve y menos profunda que las caídas de la Tabla 1, y de un periodo lateral durante 2020, la acción subió hasta su máximo histórico del 31 de marzo de 2022. 
+
+- **Periodo 8 · Caída de 31-mar-2022 a 21-jul-2025 (-32%):** Es la caída más larga de la muestra: 39.7 meses del máximo histórico al mínimo del 21 de julio de 2025. No es un desplome súbito como el de 2008, sino un deterioro gradual con choques puntuales, como las caídas de −6.9% el 14 de febrero y de −7.0% el 17 de julio de 2025. Coincide con la presión sobre los márgenes operativo y neto que señalamos en la primera entrega. Al 30 de junio de 2026 el precio no ha recuperado el máximo de 2022. 
+
+## Gráfica del precio con los periodos sombreados:
+
+```{r grafica periodos}
+plot(index(precio_cierre), as.numeric(precio_cierre), type = "n",
+     main = "Precio de WALMEX y periodos relevantes",
+     xlab = "Fecha", ylab = "MXN por acción")
+for (i in 1:nrow(periodos)) {
+  color <- ifelse(periodos$tipo[i] == "Alza", rgb(0.12, 0.31, 0.47, 0.15), rgb(0.77, 0.35, 0.07, 0.20))
+  rect(periodos$inicio[i], par("usr")[3], periodos$fin[i], par("usr")[4], col = color, border = NA)
+  text(periodos$inicio[i] + (periodos$fin[i] - periodos$inicio[i]) / 2, par("usr")[4] * 0.97, periodos$id[i], font = 2)
+}
+lines(index(precio_cierre), as.numeric(precio_cierre), col = "darkblue", lwd = 1.2)
+graphics::legend("topleft", legend = c("Alza", "Caída"), fill = c(rgb(0.12, 0.31, 0.47, 0.3), rgb(0.77, 0.35, 0.07, 0.35)),
+       border = NA, bty = "n", inset = c(0, 0.05))
+```
+El precio de cierre pasó de **5.88 MXN** el 2 de enero de 2003 a **51.26 MXN** el 30 de junio de 2026, un alza de **771.8%**. La gráfica muestra dos etapas bien distintas: 
+
+- **2003 a marzo de 2022 (tendencia alcista de largo plazo):** El precio se multiplicó casi 14 veces, hasta su máximo histórico de 81.92 MXN el 31 de marzo de 2022. La tendencia se interrumpió con caídas marcadas (2007–2009, 2012–2014 y 2016), pero después de cada una el precio superó su máximo anterior. 
+
+- **Marzo de 2022 a junio de 2026 (fase lateral-bajista):** Por primera vez en la muestra, el precio acumula más de cuatro años sin recuperar su máximo. Al cierre de junio de 2026 cotiza 37.4% por debajo del máximo de 2022 en precio de pantalla, y 29.5% por debajo en rendimiento total. 
+
+## Máximo drawdown 
+
+
+```{r drawdown manual}
+maximo_acumulado <- cummax(precio_ajustado)
+drawdown <- precio_ajustado / maximo_acumulado - 1
+colnames(drawdown) <- "Drawdown"
+
+fecha_valle <- index(drawdown)[which.min(drawdown)]
+hasta_valle <- precio_ajustado[paste0("/", fecha_valle)]
+fecha_pico <- index(hasta_valle)[which.max(hasta_valle)]
+precio_pico <- as.numeric(precio_ajustado[fecha_pico])
+precio_valle <- as.numeric(precio_ajustado[fecha_valle])
+
+# Primer día después del valle en que el precio vuelve al pico
+despues <- precio_ajustado[paste0(fecha_valle, "/")]
+fecha_recuperacion <- index(despues)[which(despues >= precio_pico)[1]]
+
+resumen_mdd <- data.frame(
+  Concepto = c("Precio en el pico", "Precio en el valle", "MDD = P_valle / P_pico - 1",
+               "Fecha del pico", "Fecha del valle", "Días de caída (pico a valle)",
+               "Fecha de recuperación", "Días de recuperación (valle a pico previo)"),
+  Valor = c(round(precio_pico, 4), round(precio_valle, 4),
+            paste0(round((precio_valle / precio_pico - 1) * 100, 2), "%"),
+            as.character(fecha_pico), as.character(fecha_valle),
+            as.numeric(fecha_valle - fecha_pico),
+            as.character(fecha_recuperacion),
+            as.numeric(fecha_recuperacion - fecha_valle))
+)
+resumen_mdd
+```
+
+Un inversionista que compró WALMEX en su máximo de febrero de 2007 llegó a perder **43.1%** de su inversión en marzo de 2009, incluso contando los dividendos cobrados. Esto muestra que una empresa de consumo básico, con un negocio defensivo y estable, también puede sufrir pérdidas de casi la mitad de su valor cuando el choque es sistémico. La recuperación fue rápida: 192 días de la fecha valor al máximo previo. 
+
+El episodio que empezó en marzo de 2022 es distinto y, para el análisis de riesgo, más preocupante. Su profundidad es menor **(-32.0%)**, pero ya dura más de cuatro años sin recuperarse. Mientras la caída de 2008 respondió a un choque externo del que la acción se recuperó pronto, la caída reciente coincide con factores propios de la empresa y de su entorno, que se analizan en las secciones siguientes. 
+
+Comprobación con PerformanceAnalytics (debe dar el mismo valor):
+
+```{r drawdown performance}
+maxDrawdown(rend_diario)
+# Nota: en table.Drawdowns la columna From es el primer día de caída (el día siguiente al pico)
+# y Length cuenta días hábiles, no naturales
+table.Drawdowns(rend_diario, top = 5)
+```
+
+Drawdown vigente desde el máximo de marzo de 2022:
+
+```{r drawdown reciente}
+dd_2022 <- drawdown["2022-03-31/"]
+min(dd_2022)
+index(dd_2022)[which.min(dd_2022)]
+last(drawdown)
+```
+
+Gráfica del drawdown:
+
+```{r grafica drawdown}
+plot(drawdown * 100,
+     main = "Drawdown diario de WALMEX (%)",
+     col = "darkorange", lwd = 0.8, grid.col = "gray90",
+     ylim = c(-50, 2))
+```
+
+Aplicamos la ecuación 3 a cada día de la serie y, con la ecuación 4, tomamos el valor mínimo. El máximo acumulado previo a la peor caída se alcanzó el 7 de febrero de 2007 con un precio ajustado de 14.8710 MXN. El valle ocurrió el 2 de marzo de 2009 con 8.4560 MXN. Por lo tanto:
+
+$$MDD = \frac{8.4560}{14.8710}-1=-43.14\%$$
+
+## Identificación de eventos y explicación de los cambios 
+
+**Periodo 1 · Alza (Enero 2003 – Febrero 2007): Expansión estructural y boom emergente** 
+Entorno Financiero y Económico: Tras superar la resaca de la burbuja "punto com", los mercados globales iniciaron un ciclo de alta liquidez. México se benefició significativamente de la maduración del TLCAN y de una sólida estabilidad macroeconómica, lo que atrajo fuertes flujos de capital extranjero hacia la bolsa local. 
+
+- **Factor Corporativo:** Walmex ejecutó un plan de expansión sumamente agresivo —destacando el crecimiento de Bodega Aurrera— y, en 2006, obtuvo la autorización para operar "Banco Walmart". 
+
+- **Relevancia del Choque:** Durante esta etapa, el flujo de información fue sumamente positivo. Sin embargo, este optimismo prolongado generó valuaciones exigentes, dejando a la acción vulnerable ante cualquier cambio en el entorno macroeconómico. 
+
+**Periodo 2 · Caída (Febrero 2007 – Marzo 2009): La Crisis Financiera Global (Riesgo Sistémico)**
+
+- **Entorno Financiero y Económico:** El colapso de las hipotecas subprime en Estados Unidos desencadenó la crisis financiera de 2008. Aunque el origen fue el sector inmobiliario y bancario estadounidense, provocó un choque de liquidez a nivel global. Los inversionistas institucionales liquidaron agresivamente sus posiciones en mercados emergentes en una "huida hacia la calidad" (flight to quality). 
+
+- **Relevancia del Choque:** Este es el ejemplo perfecto de un choque exógeno. Aunque Walmex no tenía exposición a hipotecas tóxicas y sus ventas de consumo básico conservaban un perfil defensivo, sufrió su Máximo Drawdown histórico (-43.1%). Esto demuestra que, en eventos de pánico global, la correlación entre activos tiende a 1, y los fundamentales de una empresa no pueden blindar el precio de su acción contra la falta de liquidez sistémica. 
+
+**Periodo 3 · Alza (Marzo 2009 – Abril 2012): Inyección de liquidez y expansión regional** 
+
+- **Entorno Financiero y Económico:** Los principales bancos centrales, liderados por la Reserva Federal (Fed), implementaron políticas de Flexibilización Cuantitativa (Quantitative Easing). El "dinero barato" inundó nuevamente a los mercados emergentes en busca de rendimientos. 
+
+- **Factor Corporativo:** En 2009, la empresa anunció la adquisición estratégica de Walmart Centroamérica. La consolidación de estas operaciones transformó por completo la estructura de ingresos de la emisora. 
+
+- **Relevancia del Choque:** La inyección masiva de capital exógeno combinada con la sorpresa corporativa de la expansión centroamericana detonó un ciclo alcista que triplicó el precio de la acción. Los inversionistas reaccionaron positivamente a una escala de negocio que no estaba contemplada en los modelos de valuación previos a 2009. 
+
+**Periodo 4 · Caída (Abril 2012 – Febrero 2014): El escándalo de corrupción y el choque fiscal** 
+
+- **Factor Corporativo (Choque Asimétrico):** El 21 de abril de 2012, The New York Times publicó un reportaje alegando que Walmex orquestó una campaña masiva de sobornos para acelerar la apertura de tiendas en México. Esto desató investigaciones bajo la Ley de Prácticas Corruptas en el Extranjero (FCPA) de EE. UU. 
+
+- **Entorno Político y Económico:** En 2013, México aprobó una Reforma Fiscal que incluyó impuestos a alimentos con alto contenido calórico y la homologación del IVA en la franja fronteriza. 
+
+- **Relevancia del Choque:** El reportaje causó la caída diaria más severa de toda la serie histórica (-12.2%). Se trató de información puramente asimétrica e imposible de modelar financieramente por adelantado. Este evento congeló el crecimiento inorgánico, forzó cambios en la directiva y destruyó la prima de confianza que el mercado le otorgaba a la empresa. Posteriormente, el choque fiscal de 2013-2014 comprimió aún más el poder adquisitivo de su consumidor objetivo. 
+
+**Periodo 5 · Alza (Febrero 2015 – Noviembre 2015): Reestructuración y retorno al Core Business** 
+
+- **Factor Corporativo:** Tras el estancamiento derivado del escándalo, la directiva tomó la decisión de desinvertir en activos no estratégicos. Se concretó la venta de la cadena de restaurantes Vips (a Alsea) y de Banco Walmart (a Inbursa). 
+
+- **Relevancia del Choque:** El mercado premió fuertemente esta inyección de liquidez y el reenfoque en su negocio principal (retail). Los inversionistas ajustaron al alza sus expectativas al observar una mejora en los márgenes operativos gracias a la eliminación de las divisiones menos rentables. 
+
+**Periodo 6 · Caída (Febrero 2016 – Enero 2017): Elecciones en EE. UU. y volatilidad cambiaria** 
+
+- **Entorno Político y Económico:** La sorpresiva victoria de Donald Trump en las elecciones de noviembre de 2016, sumada a su retórica proteccionista, generó pánico sobre el futuro del TLCAN. Como resultado, el peso mexicano sufrió una fuerte depreciación, rompiendo la barrera de los $20 MXN por dólar. 
+
+- **Relevancia del Choque:** Walmex genera la inmensa mayoría de sus ingresos en pesos mexicanos dentro del mercado local. Sin embargo, la caída del 7.6% en una sola sesión (noviembre de 2016) evidencia cómo el capital extranjero castigó de manera indiscriminada a los activos mexicanos (Riesgo País). Fue un choque político que alteró radicalmente las tasas de descuento, a pesar de que las ventas de los supermercados no cambiaron de un día para otro. 
+
+**Periodo 7 · Alza (Septiembre 2020 – Marzo 2022): Normalización post-pandemia e inflación** 
+
+- **Entorno Financiero y Económico:** Durante y después de la pandemia, los estímulos fiscales globales mantuvieron elevado el nivel de consumo. Cuando la inflación comenzó a repuntar a finales de 2021, los inversionistas buscaron refugio en empresas de consumo básico. 
+
+- **Factor Corporativo:** Walmex demostró un poder de fijación de precios (pricing power) excepcional, logrando trasladar la inflación al consumidor final, al mismo tiempo que consolidó una robusta infraestructura de e-commerce. 
+
+- **Relevancia del Choque:** El mercado reconoció a Walmex como un activo defensivo contra la inflación, impulsando la acción a su máximo histórico. Esto comprobó que, ante un choque inflacionario no anticipado, los flujos de caja de los supermercados dominantes se perciben como un auténtico puerto seguro. 
+
+**Periodo 8 · Caída/Lateral (Marzo 2022 – Julio 2025): Política monetaria, entorno regulatorio y presiones laborales**
+- **Entorno Financiero y Económico:** El Banco de México (Banxico) elevó la tasa de interés de referencia a niveles restrictivos históricos (alcanzando el 11.25%). Esto encareció el costo de capital de la emisora y provocó que los instrumentos de renta fija (como los Cetes) compitieran agresivamente contra los dividendos de Walmex. 
+
+- **Entorno Político y Regulatorio:** En octubre de 2023, la COFECE notificó a Walmex sobre un procedimiento por presuntas prácticas monopólicas en el mercado de abastecimiento mayorista. Simultáneamente, reformas laborales estructurales (incrementos agresivos al salario mínimo, aumento de vacaciones y reducción de la jornada laboral) impactaron directamente su estructura de costos. 
+
+- **Relevancia del Choque:** Esta fase prolongada no representa un colapso brusco, sino un reajuste estructural. El choque regulatorio de la COFECE introdujo incertidumbre legal (riesgo idiosincrático), mientras que el choque laboral ha ejercido fuerte presión sobre el margen operativo (validando la hipótesis planteada en la primera entrega del reporte). Ninguno de estos eventos críticos podía ser descontado plenamente por el mercado cuando la acción alcanzó su máximo en 2022. 
+
+## Relación con el entorno económico
+Analisis entre el PIB Mexico y los rendimientos anuales de WALMEX.
+
+
+```{r}
+# WALMEX
+
+ticker <- "WALMEX.MX"
+
+getSymbols(
+  ticker,
+  src = "yahoo",
+  from = "2003-01-01"
+)
+
+price <- na.omit(Ad(get(ticker)))
+```
+
+
+```{r}
+# Rendimientos diarios de WALMEX
+
+rend_diario <- na.omit(
+  Return.calculate(price, method = "discrete")
+)
+
+colnames(rend_diario) <- "WALMEX"
+```
+
+
+```{r}
+# Rendimiento anual de WALMEX
+
+rend_anual <- apply.yearly(
+  rend_diario,
+  function(x) prod(1 + x) - 1
+)
+
+colnames(rend_anual) <- "Rendimiento_WALMEX"
+
+rend_anual
+```
+
+
+```{r}
+# PIB anual de México
+
+url_pib <- paste0(
+  "https://api.worldbank.org/v2/country/MEX/indicator/",
+  "NY.GDP.MKTP.KD.ZG?format=json&per_page=100"
+)
+
+pib_raw <- fromJSON(content(GET(url_pib), as = "text"))
+
+pib_mexico <- data.frame(
+  anio = as.numeric(pib_raw[[2]]$date),
+  PIB = as.numeric(pib_raw[[2]]$value)
+)
+
+pib_mexico <- pib_mexico[
+  pib_mexico$anio >= 2003,
+]
+
+pib_mexico <- na.omit(pib_mexico)
+
+pib_mexico <- pib_mexico[
+  order(pib_mexico$anio),
+]
+
+pib_mexico
+```
+
+
+```{r}
+pib_anual <- pib_mexico$PIB
+rend_anual <- rend_anual["/2025"]
+
+df_final <- data.frame(
+  anio = format(index(rend_anual), "%Y"),
+  Rendimiento_WALMEX = as.numeric(rend_anual),
+  PIB = pib_anual
+)
+
+df_final
+```
+
+
+```{r}
+# Preparar datos para graficar
+
+df_final$anio <- as.numeric(df_final$anio)
+df_final$Rendimiento_WALMEX_pct <- df_final$Rendimiento_WALMEX * 100
+
+df_final
+```
+
+
+```{r}
+# Gráfica comparativa WALMEX vs PIB
+
+plot(
+  df_final$anio,
+  df_final$Rendimiento_WALMEX_pct,
+  type = "b",
+  pch = 16,
+  col = "blue",
+  xlab = "Año",
+  ylab = "Rendimiento WALMEX (%)",
+  main = "Rendimiento anual de WALMEX vs crecimiento del PIB de México"
+)
+
+par(new = TRUE)
+
+plot(
+  df_final$anio,
+  df_final$PIB,
+  type = "b",
+  pch = 17,
+  col = "red",
+  axes = FALSE,
+  xlab = "",
+  ylab = ""
+)
+
+axis(4)
+mtext("Crecimiento del PIB (%)", side = 4, line = 3)
+
+legend(
+  "topright",
+  legend = c("WALMEX", "PIB México"),
+  col = c("blue", "red"),
+  pch = c(16, 17),
+  lty = 1
+)
+```
+
+
+```{r}
+cor(
+  df_final$Rendimiento_WALMEX_pct,
+  df_final$PIB,
+  use = "complete.obs"
+)
+```
+
+```{r}
+plot(
+  df_final$PIB,
+  df_final$Rendimiento_WALMEX_pct,
+  pch = 16,
+  xlab = "Crecimiento del PIB de México (%)",
+  ylab = "Rendimiento anual de WALMEX (%)",
+  main = "Relación entre PIB y rendimiento de WALMEX"
+)
+
+abline(
+  lm(Rendimiento_WALMEX_pct ~ PIB, data = df_final),
+  col = "red"
+)
+```
+
+```{r}
+modelo_pib <- lm(
+  Rendimiento_WALMEX_pct ~ PIB,
+  data = df_final
+)
+
+summary(modelo_pib)
+```
+Relación con el entorno económico
+
+Al comparar el rendimiento anual de WALMEX con el crecimiento del PIB de México entre 2003 y 2025, no se observa que la acción se mueva de forma consistente con el ciclo económico. La correlación entre ambas variables fue de apenas 0.0176, prácticamente nula, lo que indica que los años de mayor o menor crecimiento económico no estuvieron asociados de manera clara con mayores o menores rendimientos de WALMEX.
+
+La regresión confirma este resultado. El PIB obtuvo un coeficiente de 0.1353, pero con un p-value de 0.9363, por lo que no existe evidencia estadística de una relación lineal significativa en el periodo analizado. Además, el R² fue de 0.00031, es decir, el crecimiento del PIB explica aproximadamente 0.03% de la variación observada en los rendimientos anuales de WALMEX.
+
+La gráfica también muestra comportamientos distintos en varios momentos. Por ejemplo, durante las fuertes contracciones económicas de 2009 y 2020, WALMEX no presentó una caída proporcional a la del PIB; incluso en otros años con crecimiento económico positivo, la acción llegó a registrar rendimientos negativos. Por ello, los resultados sugieren que WALMEX presenta baja sensibilidad directa al ciclo económico mexicano, al menos cuando se mide mediante el crecimiento anual del PIB.
+
+Una posible explicación se encuentra en su modelo de negocio. WALMEX tiene una alta exposición al consumo de productos básicos, cuya demanda puede mantenerse incluso en periodos de desaceleración. Además, el rendimiento de una acción depende de factores que van más allá del PIB, como resultados financieros, márgenes, costos, inflación, expansión, expectativas de los inversionistas y condiciones del mercado bursátil. Por ello, el comportamiento de WALMEX puede diferir considerablemente del desempeño general de la economía.
+
+Conclusión: con los datos analizados, WALMEX no muestra un comportamiento claramente procíclico ni contracíclico; más bien presenta un comportamiento relativamente independiente del crecimiento anual del PIB. La evidencia principal es la correlación cercana a cero, el R² prácticamente nulo y la ausencia de significancia estadística en la regresión.
+
+## Análisis de los periodos más recientes:
+
+Durante el último año analizado, WALMEX estuvo expuesta a cambios en el entorno macroeconómico y a información propia de la empresa. Uno de los factores relevantes fue la reducción de la tasa de interés de referencia del Banco de México. Entre septiembre de 2025 y mayo de 2026 la tasa objetivo pasó de (7.75%) a (6.50%), lo que modificó las condiciones financieras y las expectativas de los inversionistas.
+
+Otro factor importante fueron los resultados de la empresa. Al segundo trimestre de 2026, Walmex reportó un crecimiento consolidado de ingresos de (1.9%), mientras que el tráfico en México disminuyó (1.1%). Esto muestra una desaceleración en algunos indicadores operativos y puede generar cambios en las expectativas sobre el crecimiento futuro de la empresa. El reporte de resultados del 2T26 fue publicado el 22 de julio de 2026.
+
+También destacó el entorno regulatorio. En septiembre de 2025, la COFECE informó la conclusión de una investigación relacionada con el comercio electrónico minorista. Este tipo de acontecimientos puede introducir incertidumbre sobre las condiciones competitivas y regulatorias en las que opera Walmex.
+
+Estos acontecimientos no necesariamente producen movimientos proporcionales o inmediatos en el precio de la acción, ya que el mercado incorpora simultáneamente nueva información, expectativas y condiciones generales. Por ello, los rendimientos de WALMEX deben interpretarse como resultado de la interacción de factores empresariales, macroeconómicos y externos.
+
+## Conclusión Final parte 2:
+
+El análisis de WALMEX muestra que, aunque el precio de la acción presenta una tendencia positiva en el largo plazo, también existen periodos de caídas y variaciones importantes en los rendimientos. En la serie analizada, el precio pasó de (5.88) pesos al inicio del periodo a (51.26) pesos al 30 de junio de 2026, mientras que el máximo histórico de la serie analizada fue de (81.92) pesos.
+
+Los acontecimientos recientes permiten observar que el comportamiento de la acción no depende únicamente de los resultados de Walmex. Los cambios en las tasas de interés, el crecimiento del consumo, los resultados financieros y los acontecimientos regulatorios pueden modificar las expectativas de los inversionistas y, por consecuencia, afectar el precio y los rendimientos.
+
+En relación con el PIB, el análisis muestra que WALMEX está vinculada al ciclo económico principalmente mediante el consumo de los hogares. Sin embargo, debido a que una parte importante de sus ventas corresponde a productos de consumo básico, la relación no necesariamente es directa ni proporcional. Una desaceleración económica puede afectar el tráfico y las ventas, pero la naturaleza del negocio puede modificar la intensidad de este efecto.
+
+Finalmente, este ejercicio permite comprender que el riesgo financiero no consiste únicamente en observar si el precio sube o baja, sino en reconocer que los activos están expuestos constantemente a nueva información y a eventos que no pueden controlarse ni predecirse con certeza. Los cambios en las condiciones económicas, políticas, regulatorias y empresariales pueden generar movimientos inesperados en los precios. Por ello, el análisis histórico ayuda a identificar patrones y fuentes de riesgo, pero no elimina la incertidumbre sobre el comportamiento futuro del activo.
+
+## Referencias
+
+::: {#refs}
+CNNExpansión. (2015, 27 de agosto). Hacienda aprueba que Inbursa compre a Banco Walmart. *Expansión*. [https://expansion.mx/negocios/2015/08/27/hacienda-autoriza-fusion-de-inbursa-con-banco-walmart](https://expansion.mx/negocios/2015/08/27/hacienda-autoriza-fusion-de-inbursa-con-banco-walmart)
+
+Pool CEO. (2023, 6 de octubre). Cofece inicia juicio contra Walmart por prácticas monopólicas en el sector de comercio al menudeo. *EL CEO*. [https://elceo.com/negocios/cofece-inicia-juicio-contra-walmart-por-practicas-monopolicas-en-el-sector-de-comercio-al-menudeo/](https://elceo.com/negocios/cofece-inicia-juicio-contra-walmart-por-practicas-monopolicas-en-el-sector-de-comercio-al-menudeo/)
+
+Juárez, E. (2014, 19 de diciembre). Inbursa compra Banco Walmart. *El Economista*. [https://www.eleconomista.com.mx/sectorfinanciero/Inbursa-compra-Banco-Walmart-20141218-0173.html](https://www.eleconomista.com.mx/sectorfinanciero/Inbursa-compra-Banco-Walmart-20141218-0173.html)
+
+Redacción. (2014, 12 de mayo). Vips ya es de Alsea. *El Economista*. [https://www.eleconomista.com.mx/empresas/Vips-ya-es-de-Alsea-20140512-0045.html](https://www.eleconomista.com.mx/empresas/Vips-ya-es-de-Alsea-20140512-0045.html)
+
+Barstow, D. (2012, 21 de abril). Vast Mexico Bribery Case Hushed Up by Wal-Mart After Top-Level Struggle. *The New York Times*. [https://www.nytimes.com/2012/04/22/business/at-wal-mart-in-mexico-a-bribe-inquiry-silenced.html](https://www.nytimes.com/2012/04/22/business/at-wal-mart-in-mexico-a-bribe-inquiry-silenced.html)
+
+El Economista. (2010, 12 de enero). Las últimas fusiones 2009. *El Economista*. [https://www.eleconomista.com.mx/empresas/Las-ultimas-fusiones-2009-20100112-0144.html](https://www.eleconomista.com.mx/empresas/Las-ultimas-fusiones-2009-20100112-0144.html)
+:::
