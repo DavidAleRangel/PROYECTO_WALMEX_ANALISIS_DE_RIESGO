@@ -926,3 +926,461 @@ Barstow, D. (2012, 21 de abril). Vast Mexico Bribery Case Hushed Up by Wal-Mart 
 
 El Economista. (2010, 12 de enero). Las últimas fusiones 2009. *El Economista*. [https://www.eleconomista.com.mx/empresas/Las-ultimas-fusiones-2009-20100112-0144.html](https://www.eleconomista.com.mx/empresas/Las-ultimas-fusiones-2009-20100112-0144.html)
 :::
+
+
+# Parte 3. Rendimientos, Volatilidad y Simulación del Precio
+
+## 1. Introducción
+
+En la primera entrega caracterizamos el negocio de WALMEX y en la segunda explicamos los movimientos de su precio a partir de los eventos económicos, políticos y corporativos que los provocaron. En esta tercera entrega pasamos de la descripción a la **modelación estadística del precio**.
+
+El modelo de referencia es el **Movimiento Browniano Geométrico (GBM)**, que describe el cambio del precio con la ecuación diferencial estocástica
+
+$$dS_t=μS_t dt+σS_t dW_t$$
+
+
+donde μ es la tendencia (drift), σ la volatilidad y W_t un movimiento browniano estándar. Una implicación directa del modelo es que los **rendimientos logarítmicos son independientes y se distribuyen normal**, y por lo tanto que el **precio sigue una distribución lognormal**.
+
+El documento se organiza así:
+- **Cálculo de rendimientos y volatilidad:** Calculamos el rendimiento logarítmico diario, estimamos la media y la volatilidad diarias y anualizadas para 2021–2026 y repetimos la estimación año por año para detectar cambios en el nivel de riesgo.
+- **Pruebas estadísticas:** Aplicamos la prueba de Jarque-Bera al rendimiento, al precio y a su logaritmo, y una prueba t para saber si el rendimiento medio diario es distinto de cero.
+- **Estimación del modelo con parámetros diarios:** Construimos la ecuación del GBM y estimamos el precio esperado a 10, 20 y 40 días con intervalos de confianza de 95%.
+-	**Estimación del modelo con parámetros anuales:** Construimos la ecuación de lnS_t y estimamos el precio esperado a 3, 6, 9 y 12 meses con sus intervalos de confianza.
+- **Discusión teórica y conclusiones:** Contrastamos los supuestos del GBM con lo observado y discutimos qué riesgos introduce suponer normalidad en la toma de decisiones financieras.
+
+Igual que en las entregas anteriores, cada indicador se presenta con su definición, su fórmula, el cálculo con los datos y su interpretación.
+
+## 2. Cálculo de rendimientos y volatilidad
+
+Usamos los precios diarios de WALMEX* en la Bolsa Mexicana de Valores, obtenidos de Yahoo Finance (ticker WALMEX.MX), la misma fuente de la Parte 2. Trabajamos con el **precio ajustado por splits y dividendos**, porque mide el rendimiento total del accionista y evita saltos artificiales en las fechas de pago de dividendos. Igual que en la Parte 2, eliminamos los días festivos que la fuente reporta con volumen cero, porque generarían rendimientos artificiales de 0%. La serie limpia va del **2 de enero de 2003 al 15 de octubre de 2026**.
+
+
+```{r}
+library(quantmod)
+library(xts)
+library(TTR)
+```
+
+```{r p3_bajar_datos}
+clave <- "WALMEX.MX"
+getSymbols(clave, from = "2003-01-01", to = "2026-10-16")
+datos_p3 <- na.omit(get(clave))
+
+# Quitamos los días festivos
+datos_p3 <- datos_p3[Vo(datos_p3) > 0, ]
+
+precio <- Ad(datos_p3)
+names(precio) <- "precio"
+
+first(index(precio))
+last(index(precio))
+nrow(precio)
+```
+
+### a) Rendimiento logarítmico diario
+
+El rendimiento logarítmico (o continuamente compuesto) del día t es:
+
+$$r_t=ln(\frac{S_t}{S_(t-1)} )=lnS_t-lnS_(t-1)$$
+
+Usamos rendimientos logarítmicos, y no simples como en la Parte 2, por dos razones: son aditivos en el tiempo y son la variable que el GBM supone normal.
+
+```{r p3_rendimientos}
+rendimientos <- dailyReturn(precio, type = "log")
+# dailyReturn pone 0 en el primer día (no hay precio anterior); lo quitamos
+rendimientos <- rendimientos[-1]
+names(rendimientos) <- "rendimiento"
+
+head(rendimientos)
+```
+
+```{r p3_grafica_rendimientos}
+plot(rendimientos * 100, type = "l", col = "darkblue",
+     main = "Rendimiento logarítmico diario de WALMEX (%)",
+     ylab = "Rendimiento (%)")
+```
+
+### b) Estimaciones con toda la información de 2021 a 2026
+
+Parámetros estimados con los rendimientos de 2021 al 15 de octubre
+
+```{r p3_estimaciones_2021_2026}
+rend_21_26 <- rendimientos["2021-01-01/"]
+
+n_21_26 <- nrow(rend_21_26)
+media_diaria <- mean(rend_21_26)
+vol_diaria <- sd(rend_21_26)
+media_anual <- 252 * media_diaria
+vol_anual <- sqrt(252) * vol_diaria
+
+n_21_26
+
+estimaciones_21_26 <- data.frame(
+  Concepto = c("Rendimiento promedio diario (%)",
+               "Volatilidad diaria (%)",
+               "Rendimiento promedio anual (%)",
+               "Volatilidad anual (%)"),
+  Valor = c(round(media_diaria * 100, 4),
+            round(vol_diaria * 100, 4),
+            round(media_anual * 100, 2),
+            round(vol_anual * 100, 2))
+)
+estimaciones_21_26
+```
+
+Comprobación de la propiedad aditiva: la suma de los rendimientos diarios debe ser igual al logaritmo del precio final entre el precio del último día de 2020.
+
+```{r p3_comprobacion}
+sum(rend_21_26)
+log(as.numeric(last(precio)) / as.numeric(last(precio["/2020-12-31"])))
+```
+
+```{r p3_error_estandar}
+ee_media_diaria <- vol_diaria / sqrt(n_21_26)
+ee_media_anual <- 252 * ee_media_diaria
+
+ee_media_anual * 100                                     # error estándar anual (%)
+c(inferior = media_anual - 1.96 * ee_media_anual,
+  superior = media_anual + 1.96 * ee_media_anual) * 100   # intervalo de 95% (%)
+```
+
+### c) Estimaciones año por año
+
+Rendimiento y volatilidad de WALMEX por año (cifras en %).
+
+```{r p3_por_anio}
+media_por_ano <- apply.yearly(rend_21_26, function(x) mean(x))
+vol_por_ano <- apply.yearly(rend_21_26, sd)
+suma_por_ano <- apply.yearly(rend_21_26, sum)
+n_por_ano <- apply.yearly(rend_21_26, function(x) length(x))
+
+tabla_anual <- data.frame(
+  Ano = format(index(media_por_ano), "%Y"),
+  n = as.numeric(n_por_ano),
+  Media_diaria = round(as.numeric(media_por_ano) * 100, 3),
+  Vol_diaria = round(as.numeric(vol_por_ano) * 100, 3),
+  Rend_anual = round(as.numeric(media_por_ano) * 252 * 100, 2),
+  Vol_anual = round(as.numeric(vol_por_ano) * sqrt(252) * 100, 2),
+  Rend_realizado = round(as.numeric(suma_por_ano) * 100, 2)
+)
+tabla_anual
+```
+
+
+### Parámetros para las secciones 3 a 5 (toda la información hasta 2025)
+
+```{r p3_parametros_hasta_2025}
+rend_hasta_2025 <- rendimientos["/2025-12-31"]
+
+mu_d <- mean(rend_hasta_2025)
+sigma_d <- sd(rend_hasta_2025)
+mu_a <- 252 * mu_d
+sigma_a <- sqrt(252) * sigma_d
+S0 <- as.numeric(last(precio["/2025-12-31"]))   # último precio de 2025
+
+nrow(rend_hasta_2025)
+
+parametros_2025 <- data.frame(
+  Parametro = c("mu diaria", "sigma diaria", "mu anual", "sigma anual", "S0 (31-dic-2025)"),
+  Valor = round(c(mu_d, sigma_d, mu_a, sigma_a, S0), 6)
+)
+parametros_2025
+```
+
+### d) Interpretación
+
+**Resultados generales (2021–2026)**. Con 1,456 rendimientos diarios, el rendimiento promedio diario fue de **−0.0005%**, prácticamente cero, que anualizado equivale a **−0.13%**. La comprobación aditiva lo confirma: la suma de los rendimientos (−0.76%) coincide con ln(48.25/48.62), es decir, el precio ajustado de octubre de 2026 es casi el mismo que el de cierre de 2020. En cambio, la volatilidad diaria fue de **1.62%**, que anualizada da **25.69%**. En casi seis años el accionista asumió un riesgo considerable sin obtener rendimiento a cambio, lo que es consistente con la fase lateral-bajista que identificamos en la Parte 2 a partir de marzo de 2022.
+
+La media, además, está estimada con poca precisión: su error estándar anualizado es de **10.7%**, así que el intervalo de 95% para el rendimiento anual va de aproximadamente **−21% a +21%**. La volatilidad, en cambio, se mide con mucha más precisión.
+
+**¿Existen cambios estructurales?**
+La tendencia cambia a partir de 2022. De 2003 a 2025 la acción rinde 12.05% anual en promedio, pero de 2021 a 2026 el promedio es prácticamente 0%. 
+- 2021 todavía fue muy bueno (+32.9%), y es el último año antes del máximo histórico de marzo de 2022.
+- De 2022 a hoy hay tres años negativos y solo dos ligeramente.
+- En total se acumulan alrededor de −34% desde 2022. La acción pasó de crecer a moverse de lado o a la baja.
+
+**¿Hay años con volatilidad particularmente elevada?** 
+**2025** tuvo la volatilidad anual más alta de la ventana (**27.97%**) y concentró dos de las mayores caídas diarias: −7.2% el 14 de febrero y −7.2% el 17 de julio, ya señaladas en la Parte 2. **2021 y 2022** están casi al mismo nivel (27.4% y 27.5%); en 2021 el riesgo se concentró en el primer trimestre (38.9% anualizado), cuando la volatilidad móvil alcanzó su máximo de la ventana.
+
+**¿Se observan periodos de mayor riesgo?** 
+Sí, y lo raro es que no coinciden necesariamente con los años de peor rendimiento:
+- **2024 fue el año de mayor pérdida:** (−22.4%) con una volatilidad de 26.3%, cercana al promedio. Incluye la caída de −6.0% del 3 de junio, el primer día hábil después de la elección presidencial en México, y un cuarto trimestre muy volátil (31.4%).
+- **El cuarto trimestre de 2023** pasó de 16.9% a 30.7% de volatilidad; ahí está la caída de −5.1% del 9 de octubre, que coincide con la notificación de la COFECE descrita en la Parte 2.
+- **El segundo trimestre de 2025** registró la volatilidad trimestral más alta después de 2021 (32.1%), en el tramo final del drawdown que terminó el 21 de julio de 2025.
+- **2026** es el año más tranquilo en volatilidad (21.4%), pero acumula −14.9% al 15 de octubre. Menor volatilidad no significa menor pérdida.
+
+
+## 3. Pruebas estadísticas
+
+$$H_0:\text{Los rendimientos logarítmicos diarios siguen una distribución normal}$$
+
+$$H_a:\text{Los rendimientos logarítmicos diarios no siguen una distribución normal}$$
+
+$$JB=\frac{n}{6}\left[S^2+\frac{(K-3)^2}{4}\right]$$
+
+$$S=0 \qquad K=3$$
+
+### Prueba Jarque-Bera para los rendimientos
+
+```{r}
+rend_test <- as.numeric(na.omit(rend_hasta_2025))
+
+n <- length(rend_test)
+
+media_rend <- mean(rend_test)
+
+m2 <- mean((rend_test - media_rend)^2)
+m3 <- mean((rend_test - media_rend)^3)
+m4 <- mean((rend_test - media_rend)^4)
+
+asimetria_rend <- m3 / (m2^(3/2))
+curtosis_rend <- m4 / (m2^2)
+
+JB_rend <- (n / 6) * (
+  asimetria_rend^2 +
+  ((curtosis_rend - 3)^2 / 4)
+)
+
+p_value_rend <- pchisq(
+  JB_rend,
+  df = 2,
+  lower.tail = FALSE
+)
+
+c(
+  Asimetria = asimetria_rend,
+  Curtosis = curtosis_rend,
+  Jarque_Bera = JB_rend,
+  p_value = p_value_rend
+)
+```
+
+$$\text{Si }p\text{-value}<0.05,\text{ rechazamos }H_0$$
+
+$$\text{Si }p\text{-value}\geq0.05,\text{ no rechazamos }H_0$$
+
+### Interpretación de los rendimientos.
+
+La prueba de Jarque-Bera aplicada a los rendimientos logarítmicos diarios de WALMEX arroja un estadístico de 3228.93 y un p-value prácticamente igual a cero, por lo que se rechaza la hipótesis de normalidad.
+La asimetría de -0.0966 indica que la distribución es casi simétrica, aunque presenta una ligera inclinación hacia rendimientos negativos. Sin embargo, el resultado más importante es la curtosis de 6.66, muy superior al valor de 3 esperado bajo una distribución normal.
+Esto indica que los rendimientos presentan colas pesadas, es decir, movimientos extremos ocurren con mayor frecuencia de la que predeciría una distribución normal. Desde una perspectiva financiera, esto implica que asumir normalidad podría subestimar la probabilidad de pérdidas o ganancias extremas y, por tanto, el riesgo real del activo.
+
+```{r}
+# Precio de WALMEX hasta 2025
+
+precio_hasta_2025 <- na.omit(
+  precio["/2025-12-31"]
+)
+```
+
+$$H_0:\text{El precio de WALMEX sigue una distribución normal}$$
+
+$$H_a:\text{El precio de WALMEX no sigue una distribución normal}$$
+
+### Prueba Jarque-Bera para el precio
+
+```{r}
+precio_test <- as.numeric(precio_hasta_2025)
+
+n_precio <- length(precio_test)
+
+media_precio <- mean(precio_test)
+
+m2_precio <- mean((precio_test - media_precio)^2)
+m3_precio <- mean((precio_test - media_precio)^3)
+m4_precio <- mean((precio_test - media_precio)^4)
+
+asimetria_precio <- m3_precio / (m2_precio^(3/2))
+curtosis_precio <- m4_precio / (m2_precio^2)
+
+JB_precio <- (n_precio / 6) * (
+  asimetria_precio^2 +
+  ((curtosis_precio - 3)^2 / 4)
+)
+
+p_value_precio <- pchisq(
+  JB_precio,
+  df = 2,
+  lower.tail = FALSE
+)
+
+c(
+  Asimetria = asimetria_precio,
+  Curtosis = curtosis_precio,
+  Jarque_Bera = JB_precio,
+  p_value = p_value_precio
+)
+```
+### Interpretación 
+
+La prueba de Jarque-Bera aplicada al precio de WALMEX arroja un estadístico de 486.28 y un p-value prácticamente igual a cero, por lo que se rechaza la hipótesis de normalidad.
+
+La asimetría de 0.4543 indica una distribución ligeramente sesgada hacia la derecha, es decir, con mayor extensión hacia valores elevados del precio. Por su parte, la curtosis de 1.91, inferior a 3, indica una distribución más aplanada que una normal.
+
+En términos financieros, este resultado muestra que los niveles de precio no presentan una distribución normal. Sin embargo, para análisis de riesgo resulta más relevante estudiar los rendimientos que los precios, ya que los precios evolucionan a través del tiempo y pueden presentar tendencia. Aun así, la prueba cumple con mostrar que tampoco en niveles existe normalidad.
+
+### Logaritmo natural del precio
+
+```{r}
+log_precio <- log(precio_hasta_2025)
+
+log_precio_test <- as.numeric(
+  na.omit(log_precio)
+)
+
+n_log <- length(log_precio_test)
+
+media_log <- mean(log_precio_test)
+
+m2_log <- mean((log_precio_test - media_log)^2)
+m3_log <- mean((log_precio_test - media_log)^3)
+m4_log <- mean((log_precio_test - media_log)^4)
+
+asimetria_log <- m3_log / (m2_log^(3/2))
+curtosis_log <- m4_log / (m2_log^2)
+
+JB_log <- (n_log / 6) * (
+  asimetria_log^2 +
+  ((curtosis_log - 3)^2 / 4)
+)
+
+p_value_log <- pchisq(
+  JB_log,
+  df = 2,
+  lower.tail = FALSE
+)
+
+c(
+  Asimetria = asimetria_log,
+  Curtosis = curtosis_log,
+  Jarque_Bera = JB_log,
+  p_value = p_value_log
+)
+```
+### Interpretación del logaritmo del precio
+
+El logaritmo natural del precio presenta una asimetría negativa de -0.5274, lo que indica una mayor extensión hacia valores bajos. Su curtosis de 2.31, inferior a 3, muestra una distribución más aplanada que la normal. La prueba Jarque-Bera arroja un estadístico de 330.52 y un p-value prácticamente igual a cero, confirmando estadísticamente el rechazo de normalidad.
+
+### Prueba de media igual a 0
+
+$$H_0:\mu_r=0$$
+
+$$H_a:\mu_r\neq0$$
+
+```{r}
+# Prueba t: rendimiento promedio diario igual a cero
+
+prueba_t <- t.test(
+  as.numeric(rend_hasta_2025),
+  mu = 0,
+  alternative = "two.sided"
+)
+
+prueba_t
+```
+
+$$p\text{-value}<0.05\Rightarrow\text{rechazamos }H_0$$
+
+$$p\text{-value}\geq0.05\Rightarrow\text{no rechazamos }H_0$$
+
+### Interpretación
+
+La prueba t de una muestra arroja un estadístico de 2.1771 y un p-value de 0.0295. Al ser menor al nivel de significancia de 5%, se rechaza la hipótesis nula de que el rendimiento promedio diario sea igual a cero.
+El rendimiento logarítmico promedio diario estimado es de aproximadamente 0.0478%, y el intervalo de confianza al 95% permanece por encima de cero. Esto indica que, durante el periodo analizado hasta 2025, WALMEX presentó un rendimiento promedio diario positivo y estadísticamente significativo.
+
+### Interpretación financiera y eficiencia de mercado
+
+Los resultados muestran que el comportamiento de WALMEX no se ajusta completamente a los supuestos de normalidad utilizados en muchos modelos financieros. En particular, los rendimientos presentan colas pesadas, lo que implica una mayor probabilidad de movimientos extremos y, por tanto, un riesgo que puede ser subestimado si se supone una distribución normal.
+
+Por otro lado, la prueba t indica que el rendimiento promedio diario fue positivo y estadísticamente distinto de cero. Esto no contradice la eficiencia de mercado, ya que un rendimiento esperado positivo puede reflejar la compensación por asumir riesgo. En conjunto, los resultados sugieren que WALMEX presenta un rendimiento histórico favorable, pero acompañado de episodios de variación extrema que deben considerarse en cualquier evaluación de riesgo.
+
+## 4. Estimación del modelo con parámetros diarios
+
+### Ecuacion del modelo
+
+El Movimiento Browniano Geométrico (GBM) se representa mediante la ecuación diferencial estocástica:
+
+$$dS_t = \mu_{GBM} S_t dt + \sigma S_t dW_t$$
+
+Su solución exacta es:
+
+$$S_T=S_0\exp\left[\left(\mu_{GBM}-\frac{\sigma^2}{2}\right)T+\sigma\sqrt{T}Z\right]$$
+
+En este código, `mu_d` es la media observada de los rendimientos logarítmicos, no el parámetro de tendencia aritmética de la ecuación diferencial. Por eso, se usa la forma equivalente:
+
+$$S_T=S_0\exp\left(\mu_{log}T+\sigma\sqrt{T}Z\right),\quad Z\sim N(0,1)$$
+
+El precio esperado es $E[S_T]=S_0\exp[(\mu_{log}+\sigma^2/2)T]$. Para construir el intervalo central del 95%, se utilizan los cuantiles $Z=\pm1.96$.
+
+
+```{r}
+T <- c(10, 20, 40)
+
+estimaciones_diarias <- data.frame(
+  Dias = T,
+  Precio_Esperado = round(S0 * exp((mu_d + 0.5 * sigma_d^2) * T), 2),
+  Limite_Inferior = round(S0 * exp(mu_d * T - 1.96 * sigma_d * sqrt(T)), 2),
+  Limite_Superior = round(S0 * exp(mu_d * T + 1.96 * sigma_d * sqrt(T)), 2)
+)
+estimaciones_diarias
+```
+
+### Interpretación
+
+El precio esperado se obtiene como $E[S_T]=S_0\exp[(\mu_d+\sigma_d^2/2)T]$, porque `mu_d` es la media observada de los rendimientos logarítmicos. Los límites se calculan con los cuantiles 2.5% y 97.5% de la distribución lognormal. No representan una garantía de que el precio vaya a quedar dentro del intervalo: dependen de los supuestos del GBM.
+
+A medida que aumenta el horizonte de 10 a 20 y 40 días, el intervalo se amplía. La incertidumbre acumulada crece con el tiempo, por lo que la estimación a 40 días debe interpretarse con más cautela que la de 10 días.
+
+
+## 5. Estimación del modelo con parámetros anuales
+
+Como bien sabemos nuestro modelo se define por
+$$S_t = S_0 e^{(\mu - \frac{\sigma^2}2) T + \sigma \sqrt{T} Z}$$
+
+```{r}
+meses <- c(3, 6, 9, 12)
+T_a <- meses / 12
+
+estimaciones_anuales <- data.frame(
+  Meses = meses,
+  T_a = T_a,
+  Precio_Esperado_A = round(S0 * exp((mu_a + 0.5 * sigma_a^2) * T_a), 2),
+  Limite_Inferior_A = round(S0 * exp(mu_a * T_a - 1.96 * sigma_a * sqrt(T_a)), 2),
+  Limite_Superior_A = round(S0 * exp(mu_a * T_a + 1.96 * sigma_a * sqrt(T_a)), 2)
+)
+estimaciones_anuales
+```
+
+### Interpretación
+
+Los parámetros anuales se obtienen anualizando la media y la desviación estándar diaria con 252 días bursátiles. El horizonte se expresa en años: 3, 6, 9 y 12 meses equivalen a 0.25, 0.5, 0.75 y 1 año. Los intervalos se ensanchan con el horizonte y reflejan que las trayectorias posibles se dispersan cada vez más.
+
+Aunque los intervalos amplios son coherentes con la incertidumbre del modelo, limitan su utilidad como pronóstico puntual. Deben emplearse como escenarios teóricos y no como precios objetivos seguros. Además, la normalidad de los rendimientos es un supuesto del GBM que debe contrastarse con los resultados de Jarque-Bera.
+
+## 6. Discusión teórica
+
+### ¿Los rendimientos siguen una distribución normal?
+
+La prueba de Jarque-Bera contrasta conjuntamente si la asimetría es cero y la curtosis es igual a tres. En este análisis, el p-value de los rendimientos es prácticamente cero, por lo que se rechaza la hipótesis de normalidad al 5%. Aunque la asimetría estimada es cercana a cero, la curtosis elevada indica colas más pesadas que las de una distribución normal. En términos financieros, esto significa que las variaciones extremas pueden ocurrir con mayor frecuencia de la que predice el modelo normal.
+
+### ¿El precio es normal o lognormal?
+
+La prueba aplicada al precio también rechaza la normalidad. La prueba sobre el logaritmo natural del precio igualmente rechaza la normalidad. Por tanto, los datos observados no ofrecen evidencia de que el precio siga exactamente una distribución lognormal, pues si el precio fuera lognormal, su logaritmo debería distribuirse normalmente. Esto no implica que la distribución lognormal sea inútil como aproximación; indica que sus supuestos no describen perfectamente la muestra histórica. Es importante distinguir entre los precios y los rendimientos: los precios suelen presentar tendencia y dependencia temporal, por lo que su normalidad no es el supuesto principal del GBM.
+
+### Implicaciones de asumir normalidad en la modelación del riesgo
+
+Suponer normalidad facilita el cálculo de probabilidades, intervalos y medidas de riesgo. Sin embargo, si los rendimientos presentan colas pesadas, un intervalo basado en cuantiles normales puede subestimar la probabilidad de movimientos extremos. Esto puede llevar a estimar reservas insuficientes, dimensionar posiciones demasiado grandes o evaluar de forma incompleta posibles pérdidas. Además, el GBM supone volatilidad constante e incrementos independientes. Si en la práctica la volatilidad cambia por periodos, los intervalos teóricos pueden no reflejar adecuadamente el riesgo futuro.
+
+### Diferencias entre el GBM y los datos reales
+
+El GBM es útil como modelo de referencia porque mantiene precios positivos y produce una distribución lognormal del precio. No obstante, la evidencia de WALMEX muestra desviaciones respecto a sus supuestos: rechazo estadístico de normalidad, colas pesadas en los rendimientos y variaciones de volatilidad entre años. Las estimaciones históricas de media y volatilidad tampoco garantizan que esos parámetros se mantengan constantes en el futuro. Por ello, el GBM debe entenderse como una aproximación para construir escenarios, no como una descripción completa del mercado. Podría complementarse con simulaciones históricas, modelos con volatilidad variable o distribuciones de colas pesadas.
+
+## 7. Conclusiones
+
+En esta tercera entrega se estimaron los rendimientos logarítmicos diarios de WALMEX, sus medidas de rendimiento promedio y volatilidad, y la evolución de estos indicadores por año. La comparación anual permite identificar que el riesgo no es constante y que un año con pérdidas no necesariamente presenta la mayor volatilidad. Los resultados de 2021–2025 muestran diferencias en rendimiento y episodios de volatilidad elevada, por lo que resumir todo el periodo con un solo promedio puede ocultar cambios relevantes.
+
+Las pruebas de Jarque-Bera aplicadas a rendimientos, precio y logaritmo del precio rechazan la normalidad para las series analizadas. En especial, la curtosis de los rendimientos señala que los movimientos extremos tienen mayor presencia que la que supondría una distribución normal. La prueba t evalúa si la media diaria es distinta de cero; su conclusión debe leerse junto con las limitaciones derivadas de la distribución observada y de la posible variación temporal del riesgo.
+
+Las proyecciones mediante el Movimiento Browniano Geométrico muestran que los intervalos de precios se amplían conforme aumenta el horizonte, tanto en las estimaciones diarias como en las anualizadas. Esto ilustra que la incertidumbre no desaparece al calcular un precio esperado: aumenta a medida que se proyecta más lejos. Además, los intervalos dependen de los parámetros históricos y de supuestos que los datos no cumplen perfectamente.
+
+En conclusión, el GBM es una herramienta útil para relacionar rendimiento, volatilidad y distribución de precios, pero sus resultados no deben interpretarse como predicciones seguras. Para tomar decisiones financieras conviene complementar sus estimaciones con análisis de escenarios, pruebas de estrés y medidas que consideren movimientos extremos y cambios en la volatilidad. El principal aprendizaje es que rendimiento y riesgo deben evaluarse conjuntamente y que la incertidumbre real del mercado puede ser mayor que la que sugiere un modelo basado en normalidad.
