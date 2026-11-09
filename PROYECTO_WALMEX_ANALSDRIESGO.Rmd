@@ -1384,3 +1384,896 @@ Las pruebas de Jarque-Bera aplicadas a rendimientos, precio y logaritmo del prec
 Las proyecciones mediante el Movimiento Browniano Geométrico muestran que los intervalos de precios se amplían conforme aumenta el horizonte, tanto en las estimaciones diarias como en las anualizadas. Esto ilustra que la incertidumbre no desaparece al calcular un precio esperado: aumenta a medida que se proyecta más lejos. Además, los intervalos dependen de los parámetros históricos y de supuestos que los datos no cumplen perfectamente.
 
 En conclusión, el GBM es una herramienta útil para relacionar rendimiento, volatilidad y distribución de precios, pero sus resultados no deben interpretarse como predicciones seguras. Para tomar decisiones financieras conviene complementar sus estimaciones con análisis de escenarios, pruebas de estrés y medidas que consideren movimientos extremos y cambios en la volatilidad. El principal aprendizaje es que rendimiento y riesgo deben evaluarse conjuntamente y que la incertidumbre real del mercado puede ser mayor que la que sugiere un modelo basado en normalidad.
+
+# Parte 4: Modelos de varianza
+## Introducción 
+
+La presente entrega tiene como objetivo estimar y analizar la volatilidad de los rendimientos diarios de Walmart de México y Centroamérica (WALMEX), mediante la aplicación de distintos modelos de varianza estudiados en clase. El propósito es identificar qué metodologías permiten representar mejor las fluctuaciones del mercado y cómo responden ante cambios en el nivel de riesgo del activo.
+
+Para ello, se utilizará información histórica de enero de 2021 a septiembre de 2026, implementando modelos de promedios móviles, EWMA, Data Driven EWMA y ARCH/GARCH. La selección de sus parámetros se fundamentará en criterios estadísticos, capacidad de ajuste y comportamiento de la volatilidad estimada.
+
+Posteriormente, se evaluará la capacidad predictiva de los modelos mediante estimaciones fuera de muestra correspondientes al periodo del 5 al 30 de octubre de 2026. Finalmente, se compararán sus resultados para determinar sus ventajas, limitaciones y utilidad en la toma de decisiones financieras bajo condiciones de riesgo e incertidumbre.
+
+## Estimación de modelos
+
+Haremos únicamente la estimación y visualización. Después, con los resultados, evaluaremos cuál es el mejor m.
+
+```{r}
+#Librerias 
+library(quantmod)
+library(xts)
+library(TTR)
+library(forecast)
+library(rugarch)
+```
+
+
+### Modelo de Promedios Móviles
+
+El modelo de Promedios Móviles estima la varianza a partir de los rendimientos históricos al cuadrado, asignando la misma ponderación a las últimas m observaciones. Su objetivo es identificar cómo cambia la volatilidad según la cantidad de información utilizada.
+
+$$
+\sigma_t^2 = \frac{1}{m}\sum_{i=1}^{m} R_{t-i}^2
+$$
+
+
+Descargar los datos y calcular los rendimientos
+
+```{r}
+clave <- "WALMEX.MX"
+getSymbols(clave,
+           from = "2021-01-01",
+           to = "2026-10-01")
+precio <- na.omit(Ad(get(clave)))
+
+rendimientos <- dailyReturn(precio, type = "log")
+rendimientos <- rendimientos[-1]
+names(rendimientos) <- "rendimiento"
+rendimientos_cuadrado <- rendimientos^2
+```
+
+Estimar la volatilidad con distintos valores de m
+
+```{r}
+# Estimación de varianza
+var_5 <- SMA(rendimientos_cuadrado, n = 5)
+var_10 <- SMA(rendimientos_cuadrado, n = 10)
+var_20 <- SMA(rendimientos_cuadrado, n = 20)
+var_40 <- SMA(rendimientos_cuadrado, n = 40)
+
+# Convertir varianza a volatilidad
+vol_5 <- sqrt(var_5)
+vol_10 <- sqrt(var_10)
+vol_20 <- sqrt(var_20)
+vol_40 <- sqrt(var_40)
+```
+
+Visualizar los resultados
+
+```{r}
+# Misma escala en las cuatro gráficas para poder compararlas
+limy <- range(c(vol_5, vol_10, vol_20, vol_40), na.rm = TRUE)
+
+par(mfrow = c(2,2))
+plot(index(vol_5), as.numeric(vol_5), type = "l",
+     main = "Volatilidad m = 5", xlab = "", ylab = "Volatilidad", ylim = limy)
+
+plot(index(vol_10), as.numeric(vol_10), type = "l",
+     main = "Volatilidad m = 10", xlab = "", ylab = "Volatilidad", ylim = limy)
+
+plot(index(vol_20), as.numeric(vol_20), type = "l",
+     main = "Volatilidad m = 20", xlab = "", ylab = "Volatilidad", ylim = limy)
+
+plot(index(vol_40), as.numeric(vol_40), type = "l",
+     main = "Volatilidad m = 40", xlab = "", ylab = "Volatilidad", ylim = limy)
+
+par(mfrow = c(1,1))
+```
+
+Interpretación del comportamiento de la volatilidad
+
+Las estimaciones muestran que, conforme aumenta el tamaño de la ventana, la volatilidad de WALMEX presenta un comportamiento más estable. El modelo de 5 días registra fluctuaciones pronunciadas y mayor sensibilidad a los movimientos recientes, mientras que las ventanas de 20 y 40 días suavizan estas variaciones. Sin embargo, una ventana más amplia también implica una respuesta más lenta ante cambios repentinos del mercado, por lo que resulta necesario equilibrar estabilidad y capacidad de reacción.
+
+Evaluación y selección del valor óptimo de m
+Para seleccionar el más adecuado, dividiremos los rendimientos históricos en 70% para entrenamiento y 30% para evaluación, Compararemos la varianza estimada con los rendimientos observados al cuadrado.
+
+Evaluaremos tres indicadores: RMSE, MAE y QLIKE. En todos buscamos minimizar el error.
+
+calcular los errores
+
+```{r}
+n <- NROW(rendimientos_cuadrado)
+corte <- floor(0.70 * n)
+
+fecha_prueba <- index(rendimientos_cuadrado)[corte + 1]
+
+evaluar_modelo <- function(var_m) {
+
+  pronostico <- stats::lag(var_m, k = 1)
+
+  datos <- na.omit(merge(rendimientos_cuadrado, pronostico))
+  colnames(datos) <- c("Realizada", "Estimada")
+
+  datos <- datos[paste0(fecha_prueba, "/")]
+
+  y <- as.numeric(datos$Realizada)
+  f <- as.numeric(datos$Estimada)
+
+  RMSE <- sqrt(mean((y - f)^2))
+  MAE <- mean(abs(y - f))
+  QLIKE <- mean(log(f) + y / f)
+
+  return(c(RMSE = RMSE, MAE = MAE, QLIKE = QLIKE))
+}
+
+tabla_errores <- rbind(
+  "m = 5" = evaluar_modelo(var_5),
+  "m = 10" = evaluar_modelo(var_10),
+  "m = 20" = evaluar_modelo(var_20),
+  "m = 40" = evaluar_modelo(var_40)
+)
+
+round(tabla_errores, 6)
+```
+
+Decisión.
+
+```{r}
+apply(tabla_errores, 2, which.min)
+```
+
+Selección del valor óptimo de m = 20
+ya que presentó el menor RMSE y MAE. Aunque el modelo de 40 días obtuvo un QLIKE ligeramente menor, la ventana de 20 días ofrece un mejor desempeño en dos de los tres indicadores evaluados.
+
+### Modelo EWMA
+
+El modelo de Media Móvil Exponencialmente Ponderada (EWMA) estima la varianza asignando mayor importancia a los rendimientos recientes. A diferencia del promedio móvil simple, las observaciones no tienen el mismo peso, sino que su influencia disminuye progresivamente conforme pasa el tiempo, Donde lambda determina la importancia de la varianza anterior: mientras menor sea su valor, mayor será la sensibilidad a los movimientos recientes.
+
+
+$$
+\sigma_t^2 = (1-\lambda)R_{t-1}^2 + \lambda\sigma_{t-1}^2
+$$
+
+Estimación del modelo 
+
+Usaremos inicialmente lambda=0.94 como valor de referencia, sin considerarlo todavía el parámetro óptimo. Más adelante justificaremos su selección.
+
+```{r}
+lambda <- 0.94
+
+r2 <- as.numeric(rendimientos_cuadrado)
+n <- length(r2)
+
+var_ewma <- rep(NA_real_, n)
+
+var_ewma[21] <- mean(r2[1:20])
+
+for (t in 22:n) {
+  var_ewma[t] <- (1 - lambda) * r2[t-1] +
+                  lambda * var_ewma[t-1]
+}
+
+var_ewma <- xts(var_ewma,
+                order.by = index(rendimientos_cuadrado))
+
+vol_ewma <- sqrt(var_ewma)
+```
+
+Visualización
+
+```{r}
+
+plot(index(vol_ewma), as.numeric(vol_ewma),
+     type = "l",
+     main = "Volatilidad diaria EWMA - WALMEX",
+     xlab = "Fecha",
+     ylab = "Volatilidad diaria")
+
+```
+
+Comparación estadística de ambos modelos
+
+```{r}
+# Comparación: Promedio Móvil vs EWMA
+datos_comp <- merge(
+  rendimientos_cuadrado,
+  stats::lag(var_20, k = 1),
+  var_ewma
+)
+
+colnames(datos_comp) <- c("Realizada", "MA20", "EWMA")
+
+datos_comp <- na.omit(
+  datos_comp[paste0(fecha_prueba, "/")]
+)
+
+y <- as.numeric(datos_comp$Realizada)
+ma20 <- as.numeric(datos_comp$MA20)
+ewma <- as.numeric(datos_comp$EWMA)
+
+tabla_comp <- rbind(
+  "MA20" = c(
+    RMSE = sqrt(mean((y - ma20)^2)),
+    MAE = mean(abs(y - ma20)),
+    QLIKE = mean(log(ma20) + y / ma20)
+  ),
+  "EWMA" = c(
+    RMSE = sqrt(mean((y - ewma)^2)),
+    MAE = mean(abs(y - ewma)),
+    QLIKE = mean(log(ewma) + y / ewma)
+  )
+)
+
+round(tabla_comp, 6)
+```
+
+Comparación gráfica de volatilidades
+
+```{r}
+
+# Comparación visual
+
+vol_ma20 <- sqrt(ma20)
+vol_ewma_comp <- sqrt(ewma)
+
+plot(index(datos_comp), vol_ma20,
+     type = "l",
+     col = "darkblue",
+     main = "Comparación MA20 vs EWMA - WALMEX",
+     xlab = "Fecha",
+     ylab = "Volatilidad diaria",
+     ylim = range(c(vol_ma20, vol_ewma_comp)))
+
+lines(index(datos_comp), vol_ewma_comp,
+      col = "red")
+
+legend("topright",
+       legend = c("MA20", "EWMA"),
+       col = c("darkblue", "red"),
+       lty = 1,
+       bty = "n")
+
+```
+
+Comparación entre EWMA y Promedio Móvil
+
+Los resultados muestran que el modelo EWMA con λ = 0.94 presenta un mejor desempeño que el Promedio Móvil de 20 días, al obtener menores valores de RMSE, MAE y QLIKE. Esto indica una mayor precisión en la estimación de la varianza de WALMEX durante el periodo de evaluación.
+
+Gráficamente, ambos modelos identifican periodos similares de alta y baja volatilidad. Sin embargo, EWMA presenta transiciones más graduales, mientras que MA20 registra cambios más abruptos cuando observaciones extremas salen de su ventana. Esto se explica porque EWMA reduce progresivamente el peso de los rendimientos anteriores, en lugar de eliminarlos al superar un número fijo de días.
+
+Se utilizó un valor de λ = 0.94 como parámetro de referencia para rendimientos diarios. Esta elección permite asignar un peso del 6% a la innovación más reciente y conservar el 94% de la varianza estimada anteriormente, equilibrando sensibilidad y persistencia. Su desempeño se evaluó mediante indicadores de error, sin asumir que representa necesariamente el parámetro óptimo para WALMEX.
+
+### Modelo Data Driven EWMA
+
+El modelo Data Driven EWMA mantiene la estructura del EWMA tradicional, pero permite estimar el parámetro alpha mediante los datos históricos. Para ello, utilizaremos el método de Máxima Verosimilitud, buscando el parámetro que mejor explique los rendimientos observados.
+
+
+$$
+\sigma_t^2 = \alpha R_{t-1}^2 + (1-\alpha)\sigma_{t-1}^2
+$$
+
+$$
+\alpha = 1-\lambda
+$$
+
+Estimar el parámetro óptimo
+
+Utilizaremos el 70% de entrenamiento que ya definimos. El 30% restante quedará reservado para evaluar el desempeño predictivo.
+
+```{r}
+# Optimización mediante Máxima Verosimilitud
+r2 <- as.numeric(rendimientos_cuadrado)
+
+neg_log_verosimilitud <- function(alpha) {
+
+  varianza <- rep(NA_real_, corte)
+
+  varianza[21] <- mean(r2[1:20])
+
+  for (t in 22:corte) {
+    varianza[t] <- alpha * r2[t-1] +
+                   (1-alpha) * varianza[t-1]
+  }
+
+  resultado <- 0.5 * sum(
+    log(2*pi*varianza[21:corte]) +
+    r2[21:corte] / varianza[21:corte]
+  )
+
+  return(resultado)
+}
+
+# Buscar alpha óptimo
+optimo <- optimize(
+  neg_log_verosimilitud,
+  interval = c(0.001, 0.999)
+)
+
+alpha_optimo <- optimo$minimum
+lambda_optimo <- 1 - alpha_optimo
+
+c(
+  alpha_optimo = alpha_optimo,
+  lambda_optimo = lambda_optimo
+)
+
+```
+
+Estimar la volatilidad Data Driven EWMA
+
+```{r}
+var_dd <- rep(NA_real_, n)
+
+var_dd[21] <- mean(r2[1:20])
+
+for (t in 22:n) {
+  var_dd[t] <- alpha_optimo * r2[t-1] +
+               (1-alpha_optimo) * var_dd[t-1]
+}
+
+var_dd <- xts(var_dd,
+              order.by = index(rendimientos_cuadrado))
+
+vol_dd <- sqrt(var_dd)
+
+plot(index(vol_dd), as.numeric(vol_dd),
+     type = "l",
+     main = "Volatilidad Data Driven EWMA - WALMEX",
+     xlab = "Fecha",
+     ylab = "Volatilidad diaria")
+
+```
+
+Comparación EWMA vs. Data Driven EWMA
+
+```{r}
+datos_dd <- na.omit(merge(
+  datos_comp[, c("Realizada", "EWMA")],
+  var_dd
+))
+
+colnames(datos_dd) <- c("Realizada", "EWMA", "DataDriven")
+
+errores_dd <- function(f) {
+  y <- as.numeric(datos_dd$Realizada)
+  f <- as.numeric(f)
+
+  c(
+    RMSE = sqrt(mean((y-f)^2)),
+    MAE = mean(abs(y-f)),
+    QLIKE = mean(log(f) + y/f)
+  )
+}
+
+tabla_dd <- rbind(
+  "EWMA" = errores_dd(datos_dd$EWMA),
+  "Data Driven" = errores_dd(datos_dd$DataDriven)
+)
+
+round(tabla_dd, 6)
+```
+
+Interpretación y comparación del modelo Data Driven EWMA
+
+Mediante Máxima Verosimilitud se obtuvo un parámetro óptimo de α = 0.03118, equivalente a λ = 0.96882, lo que indica una mayor persistencia de la volatilidad y una menor sensibilidad a los movimientos recientes respecto al EWMA tradicional (λ = 0.94).
+
+$$
+\sigma_t^2 = 0.03117944 R_{t-1}^2 + 0.96882056\sigma_{t-1}^2
+$$
+
+En la evaluación, el modelo Data Driven presentó menores valores de RMSE y QLIKE, mientras que EWMA tradicional obtuvo un MAE ligeramente inferior. Por lo tanto, el Data Driven muestra un mejor desempeño en dos de los tres indicadores, aunque las diferencias son reducidas. Esto sugiere que ajustar el parámetro a los datos históricos de WALMEX puede mejorar la precisión de las estimaciones sin garantizar una superioridad en todos los criterios.
+
+### Modelos ARCH/GARCH
+
+Permiten estimar una volatilidad que cambia con el tiempo, considerando la influencia de las innovaciones pasadas y, en el caso de GARCH, de las varianzas condicionales anteriores. Su aplicación permite identificar la persistencia del riesgo y evaluar cómo responde la volatilidad de WALMEX ante nuevas fluctuaciones del mercado.
+
+Estimar el modelo de la media (ARMA)
+
+$$
+R_t = \mu_t + \varepsilon_t
+$$
+
+```{r}
+r_train <- rendimientos[1:corte]
+r_test <- rendimientos[(corte+1):n]
+
+Trn <- nrow(r_train)
+Ten <- nrow(r_test)
+
+modelo_media <- auto.arima(
+  as.numeric(r_train),
+  d = 0,
+  stationary = TRUE,
+  seasonal = FALSE
+)
+
+summary(modelo_media)
+```
+
+Identificar los órdenes del ARMA y obtener los residuos
+
+```{r}
+orden_media <- arimaorder(modelo_media)
+
+p_media <- orden_media[1]
+q_media <- orden_media[3]
+
+arma_order <- c(p_media, q_media)
+arma_order
+
+residuos_media <- residuals(modelo_media)
+
+plot(residuos_media,
+     type = "l",
+     main = "Innovaciones de la media - WALMEX",
+     xlab = "Tiempo",
+     ylab = "Residuos")
+```
+
+Interpretación del modelo de la media
+
+Se estimó un modelo ARMA(3,2) para representar el comportamiento de la media de los rendimientos diarios de WALMEX. Los residuos presentan fluctuaciones alrededor de cero, con algunos episodios de mayor amplitud, lo que sugiere posibles cambios en la volatilidad. Para determinar si existe evidencia estadística de heterocedasticidad condicional, se aplicará la prueba ARCH-LM.
+
+Prueba ARCH-LM
+
+$$
+H_0: \text{No existen efectos ARCH en los residuos}
+$$
+
+$$
+H_a: \text{Existen efectos ARCH en los residuos}
+$$
+
+```{r}
+ArchLM <- function(x, lags = 20) {
+
+  x <- na.omit(as.numeric(x))
+
+  mat <- embed(x^2, lags + 1)
+
+  modelo_aux <- lm(mat[, 1] ~ mat[, -1])
+
+  R2 <- summary(modelo_aux)$r.squared
+  n_aux <- length(residuals(modelo_aux))
+
+  estadistico <- n_aux * R2
+
+  p_value <- pchisq(
+    estadistico,
+    df = lags,
+    lower.tail = FALSE
+  )
+
+  return(c(
+    Estadistico = estadistico,
+    p_value = p_value
+  ))
+}
+
+ArchLM(residuos_media)
+```
+
+La prueba ARCH-LM aplicada a los residuos del modelo ARMA(3,2) de WALMEX obtuvo un estadístico de 29.6951 y un p-value de 0.07495. Como este valor supera el nivel de significancia del 5%, no se rechaza la hipótesis nula, por lo que no existe evidencia estadística suficiente de efectos ARCH bajo este criterio. Sin embargo, el resultado sería significativo al 10%, lo que sugiere cierta presencia de heterocedasticidad condicional que debe interpretarse con cautela.
+
+Estimación de modelos ARCH/GARCH
+
+ARCH(p):
+$$
+\sigma_t^2 = \omega + \sum_{i=1}^{p}\alpha_i\varepsilon_{t-i}^2
+$$
+
+GARCH(p,q):
+$$
+\sigma_t^2 = \omega + \sum_{i=1}^{p}\alpha_i\varepsilon_{t-i}^2 + \sum_{j=1}^{q}\beta_j\sigma_{t-j}^2
+$$
+
+Estimar los seis modelos en 
+
+```{r}
+modelos <- data.frame(
+  modelo = c("ARCH(1)", "ARCH(2)", "GARCH(1,1)",
+             "GARCH(1,2)", "GARCH(2,1)", "GARCH(2,2)"),
+  p = c(1, 2, 1, 1, 2, 2),
+  q = c(0, 0, 1, 2, 1, 2)
+)
+
+ajustes <- list()
+
+for (i in 1:nrow(modelos)) {
+
+  spec <- ugarchspec(
+    variance.model = list(
+      model = "sGARCH",
+      garchOrder = c(modelos$p[i], modelos$q[i])
+    ),
+    mean.model = list(
+      armaOrder = arma_order,
+      include.mean = TRUE
+    ),
+    distribution.model = "norm"
+  )
+
+  ajustes[[modelos$modelo[i]]] <- tryCatch(
+    ugarchfit(
+      spec = spec,
+      data = rendimientos,
+      out.sample = Ten,
+      solver = "hybrid"
+    ),
+    error = function(e) {
+      message("No se pudo estimar ", modelos$modelo[i])
+      return(NULL)
+    }
+  )
+}
+```
+
+Comparar los modelos
+
+```{r}
+resumen_modelo <- function(f) {
+
+  if (is.null(f)) {
+    return(c(Convergio = 0, LogLik = NA,
+             AIC = NA, BIC = NA))
+  }
+
+  ll <- as.numeric(likelihood(f))
+  k <- length(coef(f))
+
+  c(
+    Convergio = as.numeric(f@fit$convergence == 0),
+    LogLik = ll,
+    AIC = -2 * ll + 2 * k,
+    BIC = -2 * ll + log(Trn) * k
+  )
+}
+
+tabla_modelos <- t(sapply(ajustes, resumen_modelo))
+
+round(tabla_modelos, 3)
+```
+Decisión:
+
+```{r}
+
+# Revisar significancia de los modelos
+
+tabla_sig <- data.frame(
+  Modelo = names(ajustes),
+
+  No_significativos = sapply(ajustes, function(fit) {
+
+    tabla <- fit@fit$matcoef
+
+    filas <- grepl("^(omega|alpha|beta)", rownames(tabla))
+
+    p <- tabla[filas, 4]
+
+    malos <- rownames(tabla)[filas][p >= 0.05]
+
+    if (length(malos) == 0) "Ninguno"
+    else paste(malos, collapse = ", ")
+  })
+)
+
+rownames(tabla_sig) <- NULL
+tabla_sig
+
+```
+
+Selección del modelo ARCH/GARCH
+
+Se seleccionó el modelo GARCH(1,1), ya que todos sus parámetros de varianza resultaron estadísticamente significativos al 5% y presentó el menor BIC (-5447.981) entre los seis modelos evaluados. Aunque GARCH(1,2) obtuvo un AIC ligeramente inferior, uno de sus coeficientes no fue significativo, por lo que agregar mayor complejidad no ofrece una mejora suficientemente justificada.
+
+En consecuencia, GARCH(1,1) representa la alternativa más adecuada entre los modelos estimados para describir la volatilidad condicional de WALMEX, considerando ajuste estadístico y parsimonia.
+
+
+Parámetros del modelo GARCH(1,1)
+
+$$
+\sigma_t^2 = \omega + \alpha_1\varepsilon_{t-1}^2 + \beta_1\sigma_{t-1}^2
+$$
+
+$$
+\sigma_t^2 = 0.00001161683 + 0.04458041\varepsilon_{t-1}^2 + 0.9098412\sigma_{t-1}^2
+$$
+
+Calcular persistencia y volatilidad de largo plazo
+
+$$
+\text{Persistencia} = \alpha_1 + \beta_1
+$$
+
+$$
+V_{LP} = \frac{\omega}{1-\alpha_1-\beta_1}
+$$
+
+$$
+\sigma_{LP} = \sqrt{V_{LP}}
+$$
+
+```{r}
+
+# Modelo seleccionado
+
+modelo_optimo <- ajustes[["GARCH(1,1)"]]
+
+# Extraer parámetros
+
+w <- coef(modelo_optimo)["omega"]
+alpha <- coef(modelo_optimo)["alpha1"]
+beta <- coef(modelo_optimo)["beta1"]
+
+# Persistencia
+
+persistencia <- alpha + beta
+
+# Varianza y volatilidad de largo plazo
+
+var_LP <- w / (1 - persistencia)
+vol_LP <- sqrt(var_LP)
+
+# Resultados
+
+resultados_garch <- data.frame(
+  Parametro = c("Omega", "Alpha", "Beta",
+                "Persistencia", "Varianza LP",
+                "Volatilidad LP diaria (%)"),
+  Valor = c(w, alpha, beta,
+            persistencia, var_LP,
+            vol_LP * 100)
+)
+
+resultados_garch$Valor <- round(resultados_garch$Valor, 6)
+resultados_garch
+```
+
+El modelo GARCH(1,1) de WALMEX presenta una persistencia de 0.9544, lo que indica que los efectos de los cambios en la volatilidad tienden a mantenerse durante varios periodos. Sin embargo, al ser inferior a 1, el modelo presenta reversión hacia su nivel de largo plazo, estimado en una volatilidad diaria de 1.60%.
+
+El coeficiente beta (0.9098) muestra que la volatilidad pasada tiene mayor influencia que las innovaciones recientes, representadas por alpha (0.0446). Esto sugiere que el riesgo de WALMEX presenta una elevada persistencia, aunque los efectos de los choques se reducen gradualmente con el tiempo.
+
+Diagnóstico del modelo GARCH(1,1)
+
+$$
+z_t = \frac{\varepsilon_t}{\sigma_t}
+$$
+
+```{r}
+
+# Residuos estandarizados del GARCH(1,1)
+
+residuos_std <- residuals(
+  modelo_optimo,
+  standardize = TRUE
+)
+
+# Gráfica
+
+plot(as.numeric(residuos_std),
+     type = "l",
+     main = "Residuos estandarizados - GARCH(1,1)",
+     xlab = "Tiempo",
+     ylab = "Residuos estandarizados")
+
+# Prueba ARCH-LM con 20 rezagos
+
+ArchLM(residuos_std)
+
+```
+
+$$
+H_0: \text{No existen efectos ARCH remanentes}
+$$
+
+$$
+H_a: \text{Existen efectos ARCH remanentes}
+$$
+
+La prueba ARCH-LM aplicada a los residuos estandarizados del modelo GARCH(1,1) obtuvo un estadístico de 15.1852 y un p-value de 0.7657. Al superar el nivel de significancia del 5%, no se rechaza la hipótesis nula, lo que indica que no se detectan efectos ARCH remanentes.
+
+Este resultado es favorable para el ajuste del modelo, ya que sugiere que representa adecuadamente la dependencia de la volatilidad identificable mediante esta prueba. Sin embargo, dado que la prueba inicial tampoco fue significativa al 5%, este resultado debe interpretarse como evidencia de un diagnóstico satisfactorio, no como una demostración definitiva de la necesidad de utilizar GARCH.
+
+Reestimar GARCH(1,1) con toda la muestra
+
+```{r}
+spec_final <- ugarchspec(
+  variance.model = list(
+    model = "sGARCH",
+    garchOrder = c(1, 1)
+  ),
+  mean.model = list(
+    armaOrder = arma_order,
+    include.mean = TRUE
+  ),
+  distribution.model = "norm"
+)
+
+garch_final <- ugarchfit(
+  spec = spec_final,
+  data = rendimientos,
+  solver = "hybrid"
+)
+
+garch_final@fit$convergence
+coef(garch_final)
+```
+
+Actualización de Data Driven EWMA
+
+```{r}
+
+# Parámetro final Data Driven EWMA
+n_total <- length(r2)
+
+neg_log_final <- function(alpha) {
+
+  varianza <- rep(NA_real_, n_total)
+  varianza[21] <- mean(r2[1:20])
+
+  for (t in 22:n_total) {
+    varianza[t] <- alpha * r2[t-1] +
+                   (1-alpha) * varianza[t-1]
+  }
+
+  0.5 * sum(
+    log(2*pi*varianza[21:n_total]) +
+    r2[21:n_total] / varianza[21:n_total]
+  )
+}
+
+optimo_final <- optimize(
+  neg_log_final,
+  interval = c(0.001, 0.999)
+)
+
+alpha_final <- optimo_final$minimum
+lambda_final <- 1 - alpha_final
+
+c(
+  alpha_final = alpha_final,
+  lambda_final = lambda_final
+)
+```
+
+###  Tabla de parámetros finales
+
+```{r}
+# Resumen final de los modelos
+parametros_finales <- data.frame(
+  Modelo = c("Promedio Móvil",
+             "EWMA",
+             "Data Driven EWMA",
+             "GARCH(1,1)"),
+
+  Parametros = c(
+    "m = 20",
+    "lambda = 0.94",
+    paste0("alpha = ", round(alpha_final, 6)),
+    paste0(
+      "omega = ", signif(coef(garch_final)["omega"], 5),
+      "; alpha = ", round(coef(garch_final)["alpha1"], 6),
+      "; beta = ", round(coef(garch_final)["beta1"], 6)
+    )
+  )
+)
+
+parametros_finales
+```
+
+Síntesis de la estimación de modelos
+
+Se estimaron cuatro metodologías para analizar la volatilidad de WALMEX: Promedio Móvil, EWMA, Data Driven EWMA y ARCH/GARCH. Para el Promedio Móvil se seleccionó una ventana de 20 días, mientras que el EWMA tradicional utilizó λ = 0.94 como parámetro de referencia. En el modelo Data Driven, el parámetro se determinó mediante Máxima Verosimilitud.
+
+Por su parte, se seleccionó GARCH(1,1) entre seis modelos candidatos, considerando la significancia de sus parámetros, los criterios de información y la parsimonia. Sus resultados mostraron una elevada persistencia de la volatilidad y ausencia de efectos ARCH remanentes significativos en el diagnóstico realizado.
+
+Estas estimaciones proporcionan la base para evaluar y comparar la capacidad predictiva de los modelos durante octubre de 2026.
+
+## Evaluación de modelos
+
+Los parámetros se estimaron con información hasta el 30 de septiembre y se mantienen fijos. Para cada día de octubre la varianza solo se actualiza con el rendimiento del día anterior.
+
+Datos de octubre
+
+```{r}
+precio_oct <- na.omit(Ad(getSymbols(clave, from = "2026-09-01",
+                                    to = "2026-10-31", auto.assign = FALSE)))
+rend_oct <- dailyReturn(precio_oct, type = "log")["2026-10-01/2026-10-30"]
+names(rend_oct) <- "rendimiento"
+
+rend_total <- rbind(rendimientos, rend_oct)
+r2_total <- rend_total^2
+r2_vec <- as.numeric(r2_total)
+```
+
+Estimación de la volatilidad diaria del 5 al 30 de octubre
+
+```{r}
+ewma_rec <- function(a, r2v) {
+  v <- rep(length(r2v))
+  v[21] <- mean(r2v[1:20])
+  for (t in 22:length(r2v)) {
+    v[t] <- a * r2v[t-1] + (1 - a) * v[t-1]
+  }
+  v
+}
+
+# Promedio Móvil m = 20
+var_ma_oct <- stats::lag(SMA(r2_total, n = 20), k = 1)
+
+# EWMA lambda = 0.94
+var_ewma_oct <- xts(ewma_rec(1 - 0.94, r2_vec), order.by = index(r2_total))
+
+# Data Driven EWMA
+var_dd_oct <- xts(ewma_rec(alpha_final, r2_vec), order.by = index(r2_total))
+
+# GARCH(1,1) con parámetros fijos
+spec_fija <- spec_final
+setfixed(spec_fija) <- as.list(coef(garch_final))
+filtro_garch <- ugarchfilter(spec = spec_fija, data = rend_total,
+                             n.old = NROW(rendimientos))
+var_garch_oct <- xts(as.numeric(sigma(filtro_garch))^2,
+                     order.by = index(rend_total))
+
+```
+
+Tabla de valores observados vs estimados
+
+La volatilidad realizada es la raíz del rendimiento al cuadrado. Valores en porcentaje.
+
+```{r}
+eval_oct <- merge(r2_total, var_ma_oct, var_ewma_oct,
+                  var_dd_oct, var_garch_oct)["2026-10-05/2026-10-30"]
+
+tabla_oct <- data.frame(
+  Fecha = index(eval_oct),
+  Realizada = sqrt(as.numeric(eval_oct[, 1])) * 100,
+  MA20 = sqrt(as.numeric(eval_oct[, 2])) * 100,
+  EWMA = sqrt(as.numeric(eval_oct[, 3])) * 100,
+  DD_EWMA = sqrt(as.numeric(eval_oct[, 4])) * 100,
+  GARCH = sqrt(as.numeric(eval_oct[, 5])) * 100
+)
+
+tabla_oct
+```
+
+Comparación gráfica
+
+```{r}
+plot(tabla_oct$Fecha, tabla_oct$Realizada, type = "l", lwd = 6, col = "grey",
+     ylim = range(tabla_oct[, -1]),
+     main = "Volatilidad realizada vs estimada - WALMEX",
+     xlab = "Fecha", ylab = "Volatilidad diaria (%)")
+lines(tabla_oct$Fecha, tabla_oct$MA20, col = "darkblue")
+lines(tabla_oct$Fecha, tabla_oct$EWMA, col = "red")
+lines(tabla_oct$Fecha, tabla_oct$DD_EWMA, col = "darkgreen")
+lines(tabla_oct$Fecha, tabla_oct$GARCH, col = "purple")
+legend("topright", legend = c("Realizada", "MA20", "EWMA", "DD EWMA", "GARCH"),
+       col = c("grey", "darkblue", "red", "darkgreen", "purple"))
+```
+
+## 4. Análisis e Interpretación
+### ¿Qué modelo captura mejor los periodos de alta volatilidad?
+
+El modelo GARCH(1,1) permite representar mejor la persistencia de los periodos de alta volatilidad, ya que considera tanto los movimientos inesperados del mercado como la volatilidad de días anteriores. En WALMEX, su persistencia, nos ayudó a indicar que los episodios de mayor riesgo no desaparecen inmediatamente, sino que sus efectos permanecen durante varios días. Por otra parte, el modelo EWMA también identifica estos periodos al dar mayor importancia a los rendimientos recientes.
+
+### ¿Qué modelo reacciona más rápidamente ante cambios en el mercado?
+
+El Promedio Móvil de 20 días puede presentar cambios más abruptos cuando un rendimiento extremo entra o sale de su ventana de cálculo. Sin embargo, el EWMA responde de manera más gradual porque actualiza continuamente la importancia de los movimientos recientes. En WALMEX, el Data Driven EWMA utiliza un alpha, menor al 0.06 del EWMA tradicional, por lo que reacciona más lentamente ante nuevos movimientos. GARCH(1,1), con un alpha, también incorpora los nuevos choques, pero mantiene una fuerte influencia de la volatilidad pasada.
+
+### ¿Qué modelo presenta mayor estabilidad en sus estimaciones?
+
+El modelo GARCH(1,1) presenta una estructura estable al incorporar la persistencia de la volatilidad y regresar gradualmente hacia su nivel de largo plazo. Su volatilidad diaria de largo plazo se estimó en aproximadamente 1.60%. El Data Driven EWMA también genera estimaciones relativamente suaves debido a su elevado lambda. En cambio, el Promedio Móvil puede presentar variaciones más bruscas cuando las observaciones extremas entran o salen de la ventana de 20 días.
+
+### ¿Qué modelo tiende a sobreestimar o subestimar la volatilidad?
+
+La tendencia a sobreestimar o subestimar depende de qué tan rápido cada modelo incorpora los cambios reales del mercado. El Data Driven EWMA, al asignar un peso menor a los movimientos recientes, puede subestimar inicialmente los aumentos repentinos de volatilidad. De manera similar, EWMA puede tardar en reflejar completamente un choque muy fuerte. El Promedio Móvil puede sobreestimar la volatilidad cuando un movimiento extremo permanece dentro de su ventana, aunque también puede reducirla bruscamente cuando sale de ella. GARCH(1,1) busca equilibrar estos efectos mediante la combinación de innovaciones recientes y varianza pasada. La dirección del error para cada modelo debe confirmarse con los resultados de la evaluación fuera de muestra.
+
+## 5. Conclusión
+En conjunto, los modelos permiten observar que la volatilidad de WALMEX no permanece constante, sino que cambia conforme aparecen nuevos movimientos en el mercado. El Promedio Móvil ofrece una referencia sencilla, aunque depende de una ventana fija de observaciones. EWMA mejora este comportamiento al dar mayor importancia a los rendimientos recientes, mientras que Data Driven EWMA permite ajustar esa sensibilidad mediante los propios datos históricos. Por su parte, GARCH(1,1) incorpora tanto los nuevos choques como la volatilidad pasada, lo que permite representar la persistencia del riesgo.
+
+Los resultados muestran que no existe un modelo perfecto para todas las situaciones. EWMA obtuvo mejores resultados que el Promedio Móvil en los tres indicadores de error evaluados, mientras que Data Driven EWMA mejoró dos de los tres indicadores respecto al EWMA tradicional. Por otro lado, GARCH(1,1) fue seleccionado por su significancia estadística, menor BIC y estructura relativamente sencilla. Esto demuestra que la calidad de un modelo no depende únicamente de su ajuste estadístico, sino también de su capacidad para representar el comportamiento real del mercado.
+
+Por ello utilizaríamos GARCH(1,1) como modelo principal para analizar el riesgo de WALMEX, debido a que permite identificar la persistencia de la volatilidad y reconocer que un periodo de incertidumbre elevada puede continuar afectando al activo durante varios días.
+
+Consideramos que esta combinación permite obtener una visión más completa del riesgo, ya que una inversión no debe evaluarse únicamente por su comportamiento histórico, sino también por su capacidad para responder ante cambios inesperados. Finalmente, este ejercicio nos muestra que elegir un modelo implica reconocer sus limitaciones y que ninguna estimación puede anticipar completamente los movimientos del mercado.
