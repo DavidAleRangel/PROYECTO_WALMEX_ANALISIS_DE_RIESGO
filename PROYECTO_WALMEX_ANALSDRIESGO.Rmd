@@ -315,8 +315,8 @@ Por ello, la hipótesis inicial para las siguientes etapas del proyecto es que W
 ```{r}
 htmltools::a( 
   "Walmex - Información financiera anual", 
-  href = "https://www.walmex.mx/informacion-financiera/anual.html", 
-  target = "_blank" 
+   href = "https://www.walmex.mx/informacion-financiera/anual.html", 
+   target = "_blank" 
 )
 ```
 
@@ -2277,3 +2277,869 @@ Los resultados muestran que no existe un modelo perfecto para todas las situacio
 Por ello utilizaríamos GARCH(1,1) como modelo principal para analizar el riesgo de WALMEX, debido a que permite identificar la persistencia de la volatilidad y reconocer que un periodo de incertidumbre elevada puede continuar afectando al activo durante varios días.
 
 Consideramos que esta combinación permite obtener una visión más completa del riesgo, ya que una inversión no debe evaluarse únicamente por su comportamiento histórico, sino también por su capacidad para responder ante cambios inesperados. Finalmente, este ejercicio nos muestra que elegir un modelo implica reconocer sus limitaciones y que ninguna estimación puede anticipar completamente los movimientos del mercado.
+
+# Parte 5: Estimación del valor en riesgo
+
+## 1. Introducción
+
+En las entregas anteriores del proyecto se estudiaron los rendimientos y el comportamiento de la volatilidad de los activos financieros. En esta quinta etapa se busca integrar estos conocimientos mediante la estimación del Valor en Riesgo (VaR) de un portafolio de seis acciones, con una inversión inicial de 600,000 pesos mexicanos (MXN).
+
+El propósito es evaluar el riesgo de mercado mediante el VaR no paramétrico por simulación histórica y el VaR paramétrico bajo el supuesto de normalidad, considerando distintos niveles de confianza y horizontes de inversión. Posteriormente, se comparan ambas metodologías tanto en sus estimaciones estáticas como en su desempeño dinámico mediante *backtesting*, y se determina una composición óptima del portafolio que minimice el VaR para analizar su impacto en el riesgo y la diversificación. Por último, se estima el VaR y el Expected Shortfall individual de WALMEX por simulación de Montecarlo y se interpretan los resultados contrastando lo que dice la teoría con lo que realmente muestran los datos.
+
+Como punto de partida, se construye el portafolio, se homogeneizan los precios en una misma moneda y se calculan los rendimientos. Esta preparación permite que las estimaciones posteriores utilicen una base de datos consistente y que las diferencias entre metodologías se atribuyan a sus supuestos y no a discrepancias en la información utilizada.
+
+## 2. Construcción del portafolio
+
+### 2.1. Selección de activos
+
+Se seleccionaron seis empresas de México y Estados Unidos que pertenecen a diferentes sectores económicos. La elección busca incorporar distintas fuentes de exposición al riesgo, como el consumo, la movilidad, la tecnología, las tasas de interés, los precios de la energía y el sector salud. La diversificación sectorial y geográfica constituye un punto de partida; su efectividad deberá evaluarse posteriormente a partir de las relaciones entre los rendimientos.
+
+- **Walmart de México (WALMEX.MX, México):** comercio minorista. Da continuidad al análisis previo y permite estudiar la exposición al consumo y al poder adquisitivo.
+
+- **Grupo Aeroportuario del Sureste (ASURB.MX, México):** infraestructura aeroportuaria. Incorpora exposición al turismo y al transporte aéreo.
+
+- **Microsoft (MSFT, Estados Unidos):** tecnología. Representa la inversión en software, servicios de nube e inteligencia artificial.
+
+- **JPMorgan Chase (JPM, Estados Unidos):** servicios financieros. Permite considerar los efectos de las tasas de interés y del ciclo crediticio.
+
+- **ExxonMobil (XOM, Estados Unidos):** energía. Introduce exposición a los precios del petróleo y a las condiciones del mercado energético.
+
+- **Johnson & Johnson (JNJ, Estados Unidos):** salud. Incorpora exposición al sector farmacéutico y a la tecnología médica.
+
+Se utilizan acciones en lugar de bonos u opciones para trabajar con una metodología homogénea de rendimientos de mercado. La inclusión de activos estadounidenses también incorpora riesgo cambiario, ya que el valor del portafolio se expresa en pesos mexicanos.
+
+### 2.2. Librerías y parámetros iniciales
+
+Se considera información desde enero de 2019, con el fin de incluir periodos de diferentes condiciones de mercado. Se fija el corte al 23 de noviembre de 2026, utilizando como fecha efectiva de valoración la última observación completa y común a todos los activos y al tipo de cambio.
+
+```{r}
+library(quantmod)
+options(scipen = 999)
+clave <- c("WALMEX.MX", "ASURB.MX", "MSFT", "JPM", "XOM", "JNJ")
+empresas <- c("Walmart de México", "ASUR", "Microsoft",
+              "JPMorgan Chase", "ExxonMobil", "Johnson & Johnson")
+moneda <- c("MXN", "MXN", "USD", "USD", "USD", "USD")
+
+capital_activo <- 100000
+capital <- 600000
+fecha_inicio <- as.Date("2019-01-01")
+fecha_corte <- as.Date("2026-11-23")
+
+confianza <- c(0.95, 0.975, 0.99)
+horizontes <- c(1, 5, 10, 20)
+```
+
+El capital se distribuye de forma equitativa: 100,000 MXN en cada empresa, sin apalancamiento ni posiciones cortas. Para simplificar el ejercicio se permiten cantidades fraccionarias de acciones y se omiten comisiones e impuestos.
+
+### 2.3. Descarga y preparación de precios
+
+Se descargan los datos diarios de los seis activos y el tipo de cambio USD/MXN, expresado en pesos por dólar. Para estimar los rendimientos se utiliza la columna de cierre ajustado, que busca reducir las discontinuidades asociadas a eventos corporativos según los ajustes disponibles del proveedor. Para construir la posición inicial se utiliza el cierre de la fecha de valoración.
+
+```{r}
+getSymbols(clave, src = "yahoo", from = fecha_inicio,
+           to = fecha_corte + 1)
+
+fx <- getSymbols("MXN=X", src = "yahoo", from = fecha_inicio,
+                 to = fecha_corte + 1, auto.assign = FALSE)
+
+precio1 <- Ad(get(clave[1]))
+precio2 <- Ad(get(clave[2]))
+precio3 <- Ad(get(clave[3]))
+precio4 <- Ad(get(clave[4]))
+precio5 <- Ad(get(clave[5]))
+precio6 <- Ad(get(clave[6]))
+tipo_cambio <- Cl(fx)
+```
+
+Debido a que México y Estados Unidos tienen calendarios bursátiles distintos, se conservan solamente las fechas con información disponible para los seis activos y el tipo de cambio. No se sustituyen datos faltantes por ceros ni se interpolan precios, para evitar introducir rendimientos artificiales. En consecuencia, un intervalo entre observaciones comunes puede abarcar más de una sesión de alguno de los mercados; esta limitación deberá considerarse al interpretar el horizonte diario del VaR.
+
+```{r}
+datos <- merge(precio1, precio2, precio3, precio4,
+               precio5, precio6, tipo_cambio, all = FALSE)
+colnames(datos) <- c(clave, "USD_MXN")
+datos <- na.omit(datos)
+datos <- datos[paste0(fecha_inicio, "/", fecha_corte)]
+
+stopifnot(nrow(datos) > 1, all(is.finite(as.matrix(datos))),
+          all(as.matrix(datos) > 0))
+```
+
+Para que los activos puedan compararse desde la perspectiva de un inversionista mexicano, se convierten a pesos los precios de las cuatro acciones estadounidenses. La conversión utiliza el tipo de cambio de cada fecha, no un tipo de cambio constante:
+
+$$P_{i,t}^{MXN}=P_{i,t}^{USD}\times TC_t$$
+
+donde $TC_t$ representa los pesos mexicanos por dólar estadounidense en la fecha $t$. Los precios de WALMEX y ASUR ya están expresados en pesos.
+
+```{r}
+precios <- datos[, clave]
+precios[, 3:6] <- sweep(as.matrix(precios[, 3:6]), 1,
+                         as.numeric(datos$USD_MXN), "*")
+
+fecha_val <- as.Date(index(tail(precios, 1)))
+TC0 <- as.numeric(tail(datos$USD_MXN, 1))
+
+# Cobertura de los datos y tipo de cambio de valoración
+head(precios, 1)
+fecha_val
+nrow(precios)
+TC0
+```
+
+En las estimaciones de riesgo se trabajará con información en MXN. El uso de cierres de mercados distintos y de un tipo de cambio diario es una aproximación de valoración al cierre, no una cotización simultánea de todos los instrumentos.
+
+### 2.4. Valor inicial y composición del portafolio
+
+Se asigna el mismo capital a cada activo. Para determinar la cantidad de acciones se utiliza el cierre observado en la fecha de valoración, convertido a MXN cuando corresponde.
+
+$$n_i=\frac{100,000}{P_{i,0}}$$
+
+$$S_0=\sum_{i=1}^{6}n_iP_{i,0}$$
+
+El peso de cada posición se obtiene dividiendo su valor entre el valor total del portafolio:
+
+$$w_i=\frac{n_iP_{i,0}}{S_0}$$
+
+```{r}
+# Precios de cierre en su moneda original, en la misma fecha
+P0_local <- sapply(clave, function(x) {
+  as.numeric(Cl(get(x))[as.character(fecha_val)])
+})
+
+# Precios de cierre expresados en pesos
+P0 <- P0_local
+P0[3:6] <- P0[3:6] * TC0
+stopifnot(length(P0) == 6, all(is.finite(P0)), all(P0 > 0))
+
+# Cantidad de acciones, valor de cada posición y ponderaciones
+numero <- capital_activo / P0
+valor_posicion <- numero * P0
+S0 <- sum(valor_posicion)
+pesos <- valor_posicion / S0
+V0 <- S0
+
+portafolio <- data.frame(
+  Empresa = empresas,
+  Activo = clave,
+  Moneda = moneda,
+  Precio_local = P0_local,
+  Precio_MXN = P0,
+  Acciones = numero,
+  Inversion_MXN = valor_posicion,
+  Peso = pesos,
+  row.names = NULL
+)
+
+stopifnot(abs(S0 - capital) < 0.01,
+          all(abs(valor_posicion - capital_activo) < 0.01),
+          abs(sum(pesos) - 1) < 1e-10)
+
+portafolio
+```
+
+```{r}
+S0
+```
+
+**Valor inicial del portafolio:** Cada posición representa aproximadamente el 16.67% del capital total. Las cantidades de acciones pueden ser distintas debido a las diferencias entre los precios de los activos. Los cálculos conservan la precisión original.
+
+```{r}
+barplot(valor_posicion / 1000, names.arg = clave,
+        col = "steelblue", ylim = c(0, 120),
+        ylab = "Inversión (miles de MXN)",
+        main = "Distribución inicial del capital", cex.names = 0.8)
+abline(h = 100, col = "gray45", lty = 2)
+```
+
+La distribución equitativa evita concentrar inicialmente el capital en una sola empresa. Sin embargo, tener pesos iguales no implica que todos los activos contribuyan en la misma proporción al riesgo, puesto que sus volatilidades y correlaciones pueden diferir.
+
+### 2.5. Rendimientos individuales
+
+A partir de los precios ajustados en pesos se calculan dos tipos de rendimientos. El rendimiento logarítmico resulta conveniente para trabajar con cambios acumulados en el tiempo:
+
+$$r_{i,t}=\ln\left(\frac{P_{i,t}^{MXN}}{P_{i,t-1}^{MXN}}\right)$$
+
+Por otra parte, el rendimiento simple expresa la variación porcentual de una inversión y permite agregar correctamente los rendimientos de los activos mediante sus ponderaciones:
+
+$$R_{i,t}=\frac{P_{i,t}^{MXN}}{P_{i,t-1}^{MXN}}-1=e^{r_{i,t}}-1$$
+
+```{r}
+rendimientos <- na.omit(diff(log(precios)))
+R_hist <- as.matrix(rendimientos)
+rownames(R_hist) <- as.character(index(rendimientos))
+R_simple <- exp(R_hist) - 1
+
+head(R_hist)
+head(R_simple)
+```
+
+Los rendimientos de las empresas estadounidenses incorporan tanto las variaciones de la acción en dólares como los movimientos del tipo de cambio. No se impone normalidad en esta etapa; esa será una hipótesis del modelo paramétrico que deberá justificarse posteriormente.
+
+### 2.6. Rendimientos del portafolio
+
+Para estimar el riesgo de la composición actual, se aplica cada cambio histórico de los activos a los pesos de la fecha de valoración. El rendimiento simple de este portafolio de referencia es:
+
+$$R_{p,t}=\sum_{i=1}^{6}w_iR_{i,t}$$
+
+Este procedimiento mantiene los pesos de referencia constantes al construir cada escenario diario y facilita comparar el riesgo de las mismas posiciones actuales. No representa una estrategia histórica real de compra y mantenimiento. El rendimiento logarítmico equivalente se obtiene a partir del rendimiento simple del portafolio:
+
+$$r_{p,t}=\ln(1+R_{p,t})$$
+
+```{r}
+R_port <- xts(as.numeric(R_simple %*% pesos),
+              order.by = index(rendimientos))
+colnames(R_port) <- "R_port"
+R_port_log <- log(1 + R_port)
+
+head(R_port)
+head(R_port_log)
+```
+
+```{r}
+plot(as.Date(index(R_port)), 100 * as.numeric(R_port),
+     type = "l", col = "steelblue",
+     xlab = "Fecha", ylab = "Rendimiento (%)",
+     main = "Rendimientos históricos de la composición de referencia")
+abline(h = 0, col = "gray45", lty = 2)
+```
+
+La gráfica permite observar la magnitud y la dirección de las variaciones históricas de la cartera de referencia, sin anticipar todavía los resultados del VaR. Los periodos con movimientos pronunciados serán relevantes al estudiar la distribución de pérdidas y ganancias.
+
+### 2.7. Base para las siguientes etapas
+
+Se conservan las siguientes variables para que el equipo pueda utilizar los mismos datos y la misma composición del portafolio en los apartados posteriores.
+
+- `clave`, `precios` y `fecha_val`: activos, cierres ajustados en MXN y fecha de valoración.
+- `P0`, `numero` y `pesos`: cierres en MXN, cantidades de acciones y ponderaciones.
+- `S0` y `V0`: valor inicial total del portafolio en MXN.
+- `R_hist` y `R_simple`: matrices de rendimientos logarítmicos y simples por activo.
+- `rendimientos`, `R_port` y `R_port_log`: series de rendimientos individuales y del portafolio con sus fechas.
+- `confianza` y `horizontes`: niveles de confianza y horizontes del VaR.
+
+Para la simulación histórica de horizontes superiores a un día, se recomienda acumular los rendimientos logarítmicos de cada activo durante el horizonte y aplicar los cambios acumulados a las cantidades actuales. No se deben acumular sin aclaración los rendimientos diarios de pesos constantes como si correspondieran a posiciones fijas. Para el VaR paramétrico se utilizará la ventana reciente de seis meses indicada en la consigna; para backtesting deberán utilizarse únicamente datos disponibles antes de cada fecha evaluada.
+
+Con esto se establece la composición inicial y la base de rendimientos en una misma moneda. La estimación del VaR, la comparación entre metodologías, el backtesting y la optimización corresponden a los apartados siguientes.
+
+## 3. VaR no paramétrico (simulación histórica)
+
+### 3.1. Razón de la selección del modelo
+
+La simulación histórica no supone ninguna distribución para los rendimientos: utiliza directamente los cambios observados en el mercado desde 2019. Por ello conserva las colas pesadas, la asimetría y las correlaciones reales entre los seis activos y el tipo de cambio. Se utiliza toda la información disponible, como lo indica la consigna, y como referencia el valor actual del portafolio $S_0$.
+
+### 3.2. Escenarios de precios y función de pérdidas y ganancias a un día
+
+Cada rendimiento logarítmico histórico se aplica a los precios actuales en MXN, con lo que se obtiene un posible precio para el día siguiente:
+
+$$S_{i}^{(k)}=P_{i,0}\,e^{r_{i,k}}$$
+
+El valor del portafolio en cada escenario se obtiene con las cantidades de acciones actuales y la pérdida o ganancia se mide contra $S_0$:
+
+$$V^{(k)}=\sum_{i=1}^{6}n_iS_{i}^{(k)}, \qquad PyG^{(k)}=V^{(k)}-S_0$$
+
+```{r}
+S_hist <- sweep(exp(R_hist), 2, P0, "*")
+V_hist <- as.numeric(S_hist %*% numero)
+PL_hist <- V_hist - V0
+
+summary(PL_hist)
+```
+
+El VaR corresponde al cuantil $1-c$ de la función de pérdidas y ganancias. Se reporta con signo negativo porque representa una pérdida.
+
+```{r}
+VaR_SH_1d <- quantile(PL_hist, probs = 1 - confianza)
+VaR_SH_1d
+VaR_SH_1d / V0 * 100
+```
+
+Con la información histórica, la pérdida del portafolio en un día no debería superar `r format(round(-VaR_SH_1d[1]), big.mark = ",")` MXN (`r round(-VaR_SH_1d[1] / V0 * 100, 2)`% de $S_0$) con 95% de confianza, `r format(round(-VaR_SH_1d[2]), big.mark = ",")` MXN (`r round(-VaR_SH_1d[2] / V0 * 100, 2)`%) con 97.5% y `r format(round(-VaR_SH_1d[3]), big.mark = ",")` MXN (`r round(-VaR_SH_1d[3] / V0 * 100, 2)`%) con 99%. La peor pérdida de la muestra fue de `r format(round(-min(PL_hist)), big.mark = ",")` MXN, el `r rownames(R_hist)[which.min(PL_hist)]`, durante la caída de los mercados por el COVID-19; esto muestra que la cola izquierda contiene eventos mucho más severos que el VaR.
+
+### 3.3. Gráfica e interpretación de la distribución de pérdidas y ganancias
+
+```{r}
+hist(PL_hist, n = 100, col = "lightsteelblue", border = "white",
+     main = "Pérdidas y ganancias a un día (simulación histórica)",
+     xlab = "Pérdida / ganancia (MXN)", ylab = "Frecuencia")
+abline(v = VaR_SH_1d, col = c("darkorange", "red", "darkred"), lwd = 2)
+legend("topright", legend = paste0("VaR ", confianza * 100, "%: ",
+                                  format(round(VaR_SH_1d), big.mark = ","), " MXN"),
+       col = c("darkorange", "red", "darkred"), lwd = 2, bty = "n", cex = 0.85)
+```
+
+El histograma muestra la distribución empírica de las variaciones diarias simuladas del portafolio alrededor de cero, con una marcada concentración en días de movimientos moderados y colas alargadas hacia ambos extremos. Las tres líneas verticales en la cola izquierda delimitan los umbrales críticos de pérdida diaria: la línea naranja (95%, `r format(round(VaR_SH_1d[1]), big.mark = ",")` MXN) deja a su izquierda al 5% de los peores escenarios históricos; la línea roja (97.5%, `r format(round(VaR_SH_1d[2]), big.mark = ",")` MXN) acota el 2.5% más desfavorable; y la línea roja oscura (99%, `r format(round(VaR_SH_1d[3]), big.mark = ",")` MXN) marca el umbral que solo es rebasado en el 1% de las jornadas más adversas. Asimismo, se observa que las barras situadas a la izquierda del VaR al 99% se extienden hasta `r format(round(min(PL_hist)), big.mark = ",")` MXN, evidenciando el peso de los choques extremos no gaussianos.
+
+### 3.4. VaR para horizontes de 1, 5, 10 y 20 días
+
+Para horizontes mayores a un día no se escala el VaR diario. Se suman los rendimientos logarítmicos de cada activo en $h$ días consecutivos (ventanas móviles) y el rendimiento acumulado se aplica a los precios actuales:
+
+$$r_{i,k}^{(h)}=\sum_{j=0}^{h-1}r_{i,k+j}, \qquad S_{i}^{(k,h)}=P_{i,0}\,e^{r_{i,k}^{(h)}}$$
+
+De esta forma, el VaR de cada horizonte se obtiene de cambios realmente observados en $h$ días.
+
+```{r}
+VaR_SH <- matrix(NA, nrow = length(horizontes), ncol = length(confianza))
+rownames(VaR_SH) <- paste(horizontes, "días")
+colnames(VaR_SH) <- paste0(confianza * 100, "%")
+
+for (j in 1:length(horizontes)) {
+  h <- horizontes[j]
+  R_h <- rollapply(R_hist, width = h, FUN = sum)
+  S_h <- sweep(exp(R_h), 2, P0, "*")
+  PL_h <- as.numeric(S_h %*% numero) - V0
+  VaR_SH[j, ] <- quantile(PL_h, probs = 1 - confianza)
+}
+
+# VaR en MXN
+VaR_SH
+# VaR como % del valor del portafolio
+VaR_SH / V0 * 100
+```
+
+El VaR aumenta con el horizonte, pero menos que proporcionalmente a $\sqrt{h}$: al 99%, el VaR a 20 días es `r round(VaR_SH[4, 3] / VaR_SH[1, 3], 2)` veces el diario, mientras que $\sqrt{20}\approx4.47$. Esto ocurre porque las pérdidas extremas de días aislados no siempre se acumulan en periodos más largos y porque las ventanas de varios días se traslapan, por lo que hay menos escenarios independientes.
+
+## 4. VaR paramétrico
+
+### 4.1. Razón de la selección del modelo
+
+El VaR paramétrico supone que los rendimientos siguen una distribución normal con media cero, de modo que la pérdida del portafolio queda determinada por su volatilidad. Para que la volatilidad refleje las condiciones recientes del mercado, se estima con los rendimientos diarios de los últimos seis meses y se incorpora la dependencia entre activos mediante la matriz de covarianzas:
+
+$$VaR_{p,c}=Z_c\,S_0\,\sigma_p, \qquad \sigma_p=\sqrt{W^T\Sigma W}$$
+
+### 4.2. Volatilidad, correlación y matriz de covarianzas de los últimos seis meses
+
+```{r}
+R_6m <- last(rendimientos, "6 months")
+nrow(R_6m)
+
+# Volatilidad diaria de cada activo
+vol_6m <- apply(R_6m, 2, sd)
+vol_6m
+
+# Matriz de varianzas y covarianzas
+C <- cov(R_6m)
+C
+
+# Matriz de correlaciones
+Corr_6m <- cor(R_6m)
+round(Corr_6m, 3)
+```
+
+La ventana contiene `r nrow(R_6m)` observaciones comunes entre el `r start(R_6m)` y el `r end(R_6m)`. `r names(which.max(vol_6m))` es el activo con mayor volatilidad diaria (`r round(max(vol_6m) * 100, 2)`%) y `r names(which.min(vol_6m))` el de menor (`r round(min(vol_6m) * 100, 2)`%). La matriz de correlaciones muestra relaciones lineales imperfectas entre los activos (con pares en un rango de `r round(min(Corr_6m), 2)` a `r round(max(Corr_6m[lower.tri(Corr_6m)]), 2)`), lo cual permite que los movimientos de unas emisoras compensen parcialmente a las otras dentro del cálculo de $\Sigma$.
+
+### 4.3. Volatilidad del portafolio y VaR a un día
+
+Se utilizan los pesos de la composición actual, calculados con $S_0$.
+
+```{r}
+Z <- qnorm(1 - confianza)
+Z
+
+sigma_p <- as.numeric(sqrt(t(pesos) %*% C %*% pesos))
+sigma_p
+
+VaR_P_1d <- Z * V0 * sigma_p
+names(VaR_P_1d) <- paste0(confianza * 100, "%")
+VaR_P_1d
+VaR_P_1d / V0 * 100
+```
+
+La volatilidad diaria del portafolio es de `r round(sigma_p * 100, 2)`%, menor que la de cualquiera de los activos por separado, debido al efecto de la diversificación. Con 99% de confianza, la pérdida en un día no debería superar `r format(round(-VaR_P_1d[3]), big.mark = ",")` MXN (`r round(-VaR_P_1d[3] / V0 * 100, 2)`% de $S_0$).
+
+### 4.4. Escalación temporal del VaR
+
+Si los rendimientos diarios son independientes, tienen la misma distribución y media cero, la varianza del rendimiento acumulado en $h$ días es la suma de las $h$ varianzas diarias:
+
+$$\sigma_h^2=h\,\sigma_p^2 \quad\Rightarrow\quad \sigma_h=\sigma_p\sqrt{h}$$
+
+Por lo tanto, el VaR a $h$ días se obtiene multiplicando el VaR diario por la raíz cuadrada del horizonte:
+
+$$VaR_{h,c}=Z_c\,S_0\,\sigma_p\sqrt{h}=VaR_{1,c}\sqrt{h}$$
+
+Por ejemplo, el VaR a 5 días es $\sqrt{5}\approx2.24$ veces el VaR diario y el de 20 días es $\sqrt{20}\approx4.47$ veces. Esta regla depende del supuesto de independencia: si la volatilidad se agrupa en el tiempo, el riesgo a varios días puede ser distinto al obtenido con $\sqrt{h}$.
+
+```{r}
+VaR_P <- matrix(NA, nrow = length(horizontes), ncol = length(confianza))
+rownames(VaR_P) <- paste(horizontes, "días")
+colnames(VaR_P) <- paste0(confianza * 100, "%")
+
+for (j in 1:length(horizontes)) {
+  VaR_P[j, ] <- Z * V0 * sigma_p * sqrt(horizontes[j])
+}
+
+# VaR en MXN
+VaR_P
+# VaR como % del valor del portafolio
+VaR_P / V0 * 100
+```
+
+Por la regla de $\sqrt{h}$, al 99% el VaR pasa de `r format(round(-VaR_P[1, 3]), big.mark = ",")` MXN a un día a `r format(round(-VaR_P[4, 3]), big.mark = ",")` MXN a 20 días (`r round(-VaR_P[4, 3] / V0 * 100, 2)`% del portafolio).
+
+### 4.5. Comparación entre metodologías
+
+```{r}
+comparacion_modelos <- data.frame(
+  Horizonte = rep(paste(horizontes, "días"), times = length(confianza)),
+  Confianza = rep(paste0(confianza * 100, "%"), each = length(horizontes)),
+  VaR_SH_MXN = round(as.vector(VaR_SH), 2),
+  VaR_Param_MXN = round(as.vector(VaR_P), 2),
+  Diferencia_MXN = round(as.vector(VaR_SH - VaR_P), 2),
+  Ratio_SH_Param = round(as.vector(VaR_SH / VaR_P), 2),
+  row.names = NULL
+)
+
+comparacion_modelos
+```
+
+```{r}
+barplot(rbind(-VaR_SH[, "99%"] / 1000, -VaR_P[, "99%"] / 1000),
+        beside = TRUE, names.arg = paste(horizontes, "días"),
+        col = c("steelblue", "indianred3"),
+        ylim = c(0, max(c(-VaR_SH[, "99%"], -VaR_P[, "99%"])) / 1000 * 1.22),
+        ylab = "Pérdida estimada (miles de MXN)",
+        main = "Comparación VaR Histórico vs. Paramétrico al 99% por horizonte")
+legend("topleft",
+       legend = c("Simulación Histórica (2019–2026)", "Paramétrico Normal (6 meses)"),
+       fill = c("steelblue", "indianred3"), bty = "n", cex = 0.85)
+```
+
+Al contrastar ambas metodologías en todos los horizontes y niveles de confianza, las discrepancias observadas responden a tres diferencias estructurales:
+
+- **Horizonte de calibración y régimen de mercado:** la simulación histórica utiliza toda la muestra desde enero de 2019, por lo que incorpora episodios de estrés severo (como la crisis de 2020 y episodios de alta volatilidad cambiaria en USD/MXN). En cambio, el VaR paramétrico se calibra únicamente con los últimos seis meses, reflejando un régimen de volatilidad reciente más acotado.
+- **Forma de la distribución (colas pesadas vs. normalidad):** en el horizonte de un día, la simulación histórica arroja pérdidas máximas significativamente mayores que el enfoque paramétrico (con una razón de `r comparacion_modelos$Ratio_SH_Param[comparacion_modelos$Horizonte == "1 días" & comparacion_modelos$Confianza == "99%"]` veces al 99%). Esto se debe a que los rendimientos financieros reales exhiben curtosis elevada y asimetría negativa que la distribución normal subestima en los cuantiles extremos.
+- **Dinámica de agregación temporal:** mientras el modelo paramétrico escala mecánicamente el riesgo mediante $\sqrt{h}$ bajo el supuesto de independencia diaria, la simulación histórica evalúa ventanas móviles reales de $h$ sesiones consecutivas. Como resultado, conforme aumenta el horizonte hacia 20 días, el VaR paramétrico crece a un ritmo más acelerado que el histórico, reduciendo la brecha entre ambos enfoques.
+
+## 5. Backtesting
+
+### 5.1. Metodología y criterios de evaluación
+
+El backtesting contrasta las estimaciones diarias del VaR contra las pérdidas y ganancias efectivamente observadas en el mercado. Para evitar el uso de información futura (*look-ahead bias*), en cada fecha evaluada $t$ se estima el VaR a un día utilizando únicamente información disponible hasta $t-1$:
+
+- Simulación histórica: Emplea todos los rendimientos diarios acumulados desde el inicio de la muestra hasta $t-1$, aplicados a las cantidades actuales (`numero`) y precios (`P0`) sobre el valor inicial $V_0$.
+- VaR paramétrico: Recalcula en cada fecha $t$ la matriz de covarianzas $\Sigma_{t-1}$ con las últimas `r nrow(R_6m)` observaciones disponibles hasta $t-1$ y obtiene $\sigma_{p,t-1}=\sqrt{W^T\Sigma_{t-1}W}$.
+
+Dado que el VaR se reporta con signo negativo para representar pérdidas, ocurre una violación (o excepción) en el día $t$ cuando la pérdida realizada supera la pérdida máxima estimada por el modelo:
+
+$$PyG_t < VaR_{t,c}$$
+
+Para un periodo de evaluación de $T_{eval}$ sesiones y un nivel de confianza $c$, la tasa teórica de excepciones es $\alpha = 1 - c$, por lo que el número esperado de violaciones es $E[x] = T_{eval}(1-c)$. Para evaluar formalmente la calibración de cada metodología se aplica la prueba de cobertura incondicional de Kupiec (POF), cuyo estadístico de razón de verosimilitud contrasta si la proporción observada de fallos $\hat{p} = x / T_{eval}$ es estadísticamente consistente con $\alpha$:
+
+$$LR_{POF} = -2 \ln \left[ \frac{(1-\alpha)^{T_{eval}-x}\,\alpha^{x}}{(1-\hat{p})^{T_{eval}-x}\,\hat{p}^{x}} \right] \sim \chi^2_1$$
+
+Con un nivel de significancia del 5%, el valor crítico es $\chi^2_{1,0.95} \approx 3.841$; valores de $p$-valor superiores a $0.05$ indican que no se rechaza la hipótesis de correcta calibración del modelo.
+
+### 5.2. Estimación dinámica del VaR a un día y conteo de violaciones
+
+Se fija un periodo inicial de calibración de $W_{ini} = 252$ observaciones para que la simulación histórica cuente con datos.
+
+```{r}
+W_6m <- nrow(R_6m)
+W_ini <- 252
+n_total <- nrow(R_hist)
+idx_eval <- (W_ini + 1):n_total
+n_eval <- length(idx_eval)
+fechas_eval <- as.Date(rownames(R_hist)[idx_eval])
+
+PyG_real <- as.numeric(R_port[idx_eval]) * V0
+
+VaR_bt_SH <- matrix(NA, nrow = n_eval, ncol = length(confianza))
+VaR_bt_P  <- matrix(NA, nrow = n_eval, ncol = length(confianza))
+colnames(VaR_bt_SH) <- paste0(confianza * 100, "%")
+colnames(VaR_bt_P)  <- paste0(confianza * 100, "%")
+
+for (k in 1:length(idx_eval)) {
+  t_idx <- idx_eval[k]
+  
+  R_disp_SH <- R_hist[1:(t_idx - 1), , drop = FALSE]
+  S_esc_SH <- sweep(exp(R_disp_SH), 2, P0, "*")
+  PyG_esc_SH <- as.numeric(S_esc_SH %*% numero) - V0
+  VaR_bt_SH[k, ] <- quantile(PyG_esc_SH, probs = 1 - confianza)
+  
+  R_disp_P <- R_hist[(t_idx - W_6m):(t_idx - 1), , drop = FALSE]
+  C_t <- cov(R_disp_P)
+  sigma_t <- as.numeric(sqrt(t(pesos) %*% C_t %*% pesos))
+  VaR_bt_P[k, ] <- Z * V0 * sigma_t
+}
+
+viol_SH <- apply(VaR_bt_SH, 2, function(v) PyG_real < v)
+viol_P  <- apply(VaR_bt_P,  2, function(v) PyG_real < v)
+
+obs_SH <- colSums(viol_SH)
+obs_P  <- colSums(viol_P)
+esperadas <- n_eval * (1 - confianza)
+```
+
+### 5.3. Prueba de cobertura incondicional de Kupiec y comparación visual
+
+```{r}
+prueba_kupiec <- function(x, n, alpha) {
+  p_hat <- x / n
+  if (x == 0 || x == n) {
+    lr <- -2 * (n * log(1 - alpha))
+  } else {
+    log_l0 <- (n - x) * log(1 - alpha) + x * log(alpha)
+    log_l1 <- (n - x) * log(1 - p_hat) + x * log(p_hat)
+    lr <- -2 * (log_l0 - log_l1)
+  }
+  p_val <- 1 - pchisq(lr, df = 1)
+  c(LR_POF = lr, p_valor = p_val)
+}
+
+kupiec_SH <- t(mapply(prueba_kupiec, x = obs_SH, n = n_eval, alpha = 1 - confianza))
+kupiec_P  <- t(mapply(prueba_kupiec, x = obs_P,  n = n_eval, alpha = 1 - confianza))
+
+resumen_bt <- data.frame(
+  Modelo = rep(c("Simulación Histórica", "Paramétrico Normal"), each = length(confianza)),
+  Confianza = rep(paste0(confianza * 100, "%"), times = 2),
+  Dias_Eval = n_eval,
+  Esperadas = rep(round(esperadas, 1), times = 2),
+  Observadas = c(obs_SH, obs_P),
+  Tasa_Obs_Pct = round(c(obs_SH, obs_P) / n_eval * 100, 2),
+  Ratio_Obs_Esp = round(c(obs_SH, obs_P) / rep(esperadas, times = 2), 2),
+  LR_Kupiec = round(c(kupiec_SH[, "LR_POF"], kupiec_P[, "LR_POF"]), 3),
+  p_valor = round(c(kupiec_SH[, "p_valor"], kupiec_P[, "p_valor"]), 4),
+  row.names = NULL
+)
+
+resumen_bt
+```
+
+```{r}
+rango_y <- range(c(PyG_real, VaR_bt_SH[, "99%"], VaR_bt_P[, "99%"])) / 1000
+plot(fechas_eval, PyG_real / 1000, type = "l", col = "gray70",
+     ylim = rango_y, xlab = "Fecha", ylab = "PyG / VaR (miles de MXN)",
+     main = "Backtesting del VaR diario al 99% de confianza")
+lines(fechas_eval, VaR_bt_SH[, "99%"] / 1000, col = "steelblue", lwd = 1.8)
+lines(fechas_eval, VaR_bt_P[, "99%"] / 1000, col = "darkred", lwd = 1.6)
+
+idx_v_sh <- which(viol_SH[, "99%"])
+idx_v_p  <- which(viol_P[, "99%"])
+points(fechas_eval[idx_v_sh], PyG_real[idx_v_sh] / 1000, pch = 16, col = "blue", cex = 0.85)
+points(fechas_eval[idx_v_p],  PyG_real[idx_v_p] / 1000,  pch = 4,  col = "red",  cex = 0.95)
+
+legend("bottomright",
+       legend = c("PyG diaria realizada",
+                  paste0("VaR SH 99% (violaciones: ", obs_SH[3], ")"),
+                  paste0("VaR Paramétrico 99% (violaciones: ", obs_P[3], ")"),
+                  "Excepción SH", "Excepción Paramétrico"),
+       col = c("gray70", "steelblue", "darkred", "blue", "red"),
+       lty = c(1, 1, 1, NA, NA), pch = c(NA, NA, NA, 16, 4),
+       lwd = c(1, 1.8, 1.6, NA, NA), bty = "n", cex = 0.8)
+```
+
+### 5.4. Evaluación crítica del desempeño de los modelos
+
+En el periodo fuera de muestra compuesto por 1,445 sesiones (del 2020-02-28 al 2026-11-23), el número teórico de excepciones es de 72.3 al 95%, 36.1 al 97.5% y 14.5 al 99%.
+
+La gráfica del VaR al 99% permite visualizar la diferencia estructural entre ambas metodologías: la línea azul presenta un comportamiento escalonado y relativamente estable porque acumula toda la muestra histórica previa, mientras que la línea roja oscila continuamente conforme entra y sale volatilidad en su ventana móvil de seis meses.
+
+- Simulación histórica: registró 59, 18 y 8 violaciones al 95%, 97.5% y 99%, respectivamente (ratios observado/esperado de 0.82, 0.50 y 0.55). Al no imponer normalidad, captura de forma más fiel las colas pesadas y los saltos cambiarios una vez que los episodios de estrés forman parte de la muestra; su principal limitación es la lentitud para reaccionar cuando comienza un choque repentino o cuando se disipa un periodo de alta volatilidad. Además, al 97.5% tuvo menos violaciones de las esperadas y la prueba de Kupiec `r ifelse(resumen_bt$p_valor[2] < 0.05, "rechaza", "no rechaza")` su calibración (p-valor = `r round(resumen_bt$p_valor[2], 4)`): en ese nivel resulta demasiado prudente.
+- VaR paramétrico: registró 65, 40 y 25 violaciones para los mismos niveles de confianza (ratios de 0.90, 1.11 y 1.73). Gracias a la ventana móvil de seis meses, su umbral se ajusta con mayor rapidez cuando aumenta o disminuye la volatilidad reciente; sin embargo, al asumir rendimientos normales con colas delgadas, subestima la frecuencia de las pérdidas extremas en los niveles altos de confianza (ratios de 1.11 al 97.5% y 1.73 al 99%). La prueba de Kupiec `r ifelse(resumen_bt$p_valor[6] < 0.05, "rechaza", "no rechaza")` su calibración al 99% (p-valor = `r round(resumen_bt$p_valor[6], 4)`) y `r ifelse(resumen_bt$p_valor[5] < 0.05, "rechaza", "no rechaza")` la del 97.5% (p-valor = `r round(resumen_bt$p_valor[5], 4)`).
+
+Desde una perspectiva prudencial de administración de riesgos, la simulación histórica ofrece un desempeño superior en la cola extrema (99%), donde la subestimación del riesgo resulta más costosa, mientras que el modelo paramétrico funciona mejor como indicador dinámico en niveles moderados (95%).
+
+## 6. Optimización del portafolio
+
+### 6.1. Formulación del problema de mínimo VaR
+
+Bajo el enfoque paramétrico desarrollado en la sección 4, el VaR del portafolio para un nivel de confianza $c$ y un capital inicial $S_0$ está dado por:
+
+$$VaR_{p,c} = Z_c \, S_0 \, \sigma_p, \qquad \sigma_p = \sqrt{W^T \Sigma W}$$
+
+Dado que $Z_c$ y $S_0$ son constantes para un nivel de confianza dado, minimizar la pérdida asociada al VaR equivale directamente a minimizar la volatilidad del portafolio $\sigma_p$ (o su varianza $W^T\Sigma W$). Conservando las restricciones operativas del portafolio inicial (inversión total del 100% del capital, sin apalancamiento ni ventas en corto), se plantea el siguiente problema de programación cuadrática:
+
+$$\min_{W} \; W^T \Sigma W \quad \text{sujeto a} \quad \sum_{i=1}^{6} w_i = 1, \qquad w_i \ge 0 \;\; \forall i \in \{1,\dots,6\}$$
+
+donde $\Sigma$ corresponde a la matriz de varianzas y covarianzas de los últimos seis meses (`C`).
+
+### 6.2. Cálculo de los pesos óptimos y comparación con el portafolio inicial
+
+```{r}
+library(quadprog)
+
+n_act <- length(clave)
+Dmat <- 2 * C
+dvec <- rep(0, n_act)
+Amat <- cbind(rep(1, n_act), diag(n_act))
+bvec <- c(1, rep(0, n_act))
+
+sol_opt <- solve.QP(Dmat = Dmat, dvec = dvec, Amat = Amat, bvec = bvec, meq = 1)
+
+pesos_opt <- sol_opt$solution
+pesos_opt[abs(pesos_opt) < 1e-10] <- 0
+pesos_opt <- pesos_opt / sum(pesos_opt)
+names(pesos_opt) <- clave
+
+stopifnot(abs(sum(pesos_opt) - 1) < 1e-10, all(pesos_opt >= 0))
+
+inversion_opt <- pesos_opt * V0
+acciones_opt  <- inversion_opt / P0
+
+comparacion_pesos <- data.frame(
+  Empresa = empresas,
+  Activo = clave,
+  Vol_6m_Pct = round(vol_6m * 100, 2),
+  Peso_Inicial_Pct = round(pesos * 100, 2),
+  Peso_Optimo_Pct = round(pesos_opt * 100, 2),
+  Cambio_Peso_Pct = round((pesos_opt - pesos) * 100, 2),
+  Inversion_Opt_MXN = round(inversion_opt, 2),
+  Acciones_Opt = round(acciones_opt, 4),
+  row.names = NULL
+)
+
+comparacion_pesos
+```
+
+```{r}
+barplot(rbind(pesos * 100, pesos_opt * 100),
+        beside = TRUE, names.arg = clave,
+        col = c("steelblue", "darkseagreen4"),
+        ylim = c(0, max(c(pesos, pesos_opt)) * 118),
+        ylab = "Ponderación (%)",
+        main = "Comparación de pesos: portafolio inicial vs. mínimo VaR",
+        cex.names = 0.85)
+legend("topright",
+       legend = c("Portafolio inicial (equitativo: 16.67%)", "Portafolio mínimo VaR"),
+       fill = c("steelblue", "darkseagreen4"), bty = "n", cex = 0.85)
+```
+
+### 6.3. Análisis de cambios en riesgo y diversificación
+
+```{r}
+sigma_opt <- as.numeric(sqrt(t(pesos_opt) %*% C %*% pesos_opt))
+VaR_P_opt_1d <- Z * V0 * sigma_opt
+names(VaR_P_opt_1d) <- paste0(confianza * 100, "%")
+
+VaR_P_opt <- matrix(NA, nrow = length(horizontes), ncol = length(confianza))
+rownames(VaR_P_opt) <- paste(horizontes, "días")
+colnames(VaR_P_opt) <- paste0(confianza * 100, "%")
+for (j in 1:length(horizontes)) {
+  VaR_P_opt[j, ] <- Z * V0 * sigma_opt * sqrt(horizontes[j])
+}
+
+PL_hist_opt <- as.numeric(S_hist %*% acciones_opt) - V0
+VaR_SH_opt_1d <- quantile(PL_hist_opt, probs = 1 - confianza)
+
+HHI_ini <- sum(pesos^2)
+HHI_opt <- sum(pesos_opt^2)
+
+DR_ini <- sum(pesos * vol_6m) / sigma_p
+DR_opt <- sum(pesos_opt * vol_6m) / sigma_opt
+
+resumen_opt <- data.frame(
+  Metrica = c("Volatilidad diaria (%)",
+              "VaR Paramétrico 1d 95% (MXN)",
+              "VaR Paramétrico 1d 97.5% (MXN)",
+              "VaR Paramétrico 1d 99% (MXN)",
+              "VaR Histórico 1d 99% (MXN)",
+              "Índice Herfindahl (HHI)",
+              "Ratio de Diversificación (DR)"),
+  Inicial = round(c(sigma_p * 100, -VaR_P_1d, -VaR_SH_1d[3], HHI_ini, DR_ini), 3),
+  Optimo  = round(c(sigma_opt * 100, -VaR_P_opt_1d, -VaR_SH_opt_1d[3], HHI_opt, DR_opt), 3),
+  Variacion_Pct = round(c((sigma_opt / sigma_p - 1) * 100,
+                          (VaR_P_opt_1d / VaR_P_1d - 1) * 100,
+                          (VaR_SH_opt_1d[3] / VaR_SH_1d[3] - 1) * 100,
+                          (HHI_opt / HHI_ini - 1) * 100,
+                          (DR_opt / DR_ini - 1) * 100), 2)
+)
+
+resumen_opt
+```
+
+Al contrastar la composición óptima frente al portafolio equitativo inicial, se identifican tres efectos fundamentales sobre el riesgo y la diversificación:
+
+- Reducción sustancial del VaR y la volatilidad paramétrica: la volatilidad diaria del portafolio cae de 0.97% a 0.88%, lo que reduce el VaR paramétrico en 9.70% en todos los niveles de confianza y horizontes. Al 99% a un día, la pérdida máxima esperada disminuye de 13,577 MXN a 12,259 MXN. No obstante, al evaluar esta misma composición bajo simulación histórica (2019–2026), el VaR al 99% pasa de 16,684 MXN a 16,980 MXN (+1.77%), lo que muestra que minimizar la varianza con datos recientes de seis meses no garantiza una reducción simultánea en escenarios extremos de crisis pasadas.
+- Reasignación hacia activos defensivos y baja covarianza: el algoritmo penaliza las acciones con mayor volatilidad en pesos mexicanos —como Microsoft (`MSFT`, cuya ponderación baja de 16.67% a 2.25%) y Johnson & Johnson (`JNJ`, que baja a 8.31%)— y concentra el capital en los títulos con menor volatilidad reciente en MXN y baja correlación cruzada, principalmente Walmart de México (`WALMEX.MX`, 26.65%), ASUR (`ASURB.MX`, 24.20%), JPMorgan Chase (`JPM`, 19.98%) y ExxonMobil (`XOM`, 18.61%).
+- Tensión entre concentración nominal y diversificación de riesgo: al pasar de pesos iguales (16.67%) a pesos óptimos, el índice de concentración de capital (HHI) aumenta de 0.1667 a 0.2116. Aunque el portafolio se vuelve más concentrado en términos de asignación monetaria, aprovecha de manera más eficiente las correlaciones cruzadas entre sectores y monedas para abatir la varianza total, elevando ligeramente el ratio de diversificación ($DR = \sum w_i\sigma_i / \sigma_p$) de 2.00 a 2.01.
+
+## 7. VaR individual y Expected Shortfall de WALMEX
+
+### 7.1. Razón de la selección del modelo
+
+Para la posición individual (100,000 MXN en WALMEX) usamos simulación de Montecarlo con remuestreo de los rendimientos históricos. Elegimos esta versión porque la consigna pide una metodología no paramétrica: no suponemos ninguna distribución, solo generamos 100,000 escenarios de rendimiento diario tomando al azar, con reemplazo, rendimientos reales de WALMEX. Usamos la misma serie de las Partes 2 a 4: precios ajustados de WALMEX.MX descargados de Yahoo Finance desde el 2 de enero de 2003, sin los días festivos con volumen cero y con rendimientos logarítmicos. Así se conservan las colas pesadas que ya habíamos detectado en la Parte 3 con la prueba de Jarque-Bera.
+
+Como referencia incluimos un Montecarlo que sí supone normalidad (con la misma media y volatilidad de WALMEX) y la simulación histórica directa como control. La diferencia entre el remuestreo y el Montecarlo normal nos muestra, en pesos, cuánto cambia el riesgo por suponer o no normalidad.
+
+### 7.2. Simulación, VaR y Expected Shortfall al 99%
+
+El VaR es el cuantil 1% de la pérdida o ganancia simulada y el Expected Shortfall (ES) es el promedio de las pérdidas que superan al VaR:
+
+$$ES_{c}=E\left[PyG \mid PyG \leq VaR_{c}\right]$$
+
+```{r}
+set.seed(2026)
+N_sim <- 100000
+posicion <- capital_activo
+
+# Misma serie de WALMEX que en las Partes 2 a 4 (Yahoo Finance, desde 2003)
+datos_wal <- na.omit(getSymbols("WALMEX.MX", src = "yahoo", from = "2003-01-01",
+                                to = fecha_corte + 1, auto.assign = FALSE))
+datos_wal <- datos_wal[Vo(datos_wal) > 0, ]
+rend_wal <- dailyReturn(Ad(datos_wal), type = "log")[-1]
+r_wal <- as.numeric(rend_wal)
+c(inicio = as.character(start(rend_wal)), fin = as.character(end(rend_wal)),
+  n = length(r_wal))
+mu_wal <- mean(r_wal)
+sd_wal <- sd(r_wal)
+
+# Montecarlo no paramétrico: remuestreo con reemplazo de rendimientos históricos
+r_mc_np <- sample(r_wal, size = N_sim, replace = TRUE)
+PL_mc_np <- posicion * (exp(r_mc_np) - 1)
+
+# Montecarlo con normalidad (referencia)
+r_mc_n <- rnorm(N_sim, mean = mu_wal, sd = sd_wal)
+PL_mc_n <- posicion * (exp(r_mc_n) - 1)
+
+# Simulación histórica directa (control)
+PL_h_wal <- posicion * (exp(r_wal) - 1)
+
+# WALMEX solo en la muestra del portafolio (2019 en adelante), para comparar
+# con el portafolio con los mismos datos
+PL_h_wal19 <- posicion * (exp(as.numeric(R_hist[, "WALMEX.MX"])) - 1)
+VaR_wal19 <- as.numeric(quantile(PL_h_wal19, probs = 0.01))
+
+var_es <- function(pl, nivel_c = 0.99) {
+  v <- as.numeric(quantile(pl, probs = 1 - nivel_c))
+  c(VaR = v, ES = mean(pl[pl <= v]))
+}
+
+metodos <- c("Montecarlo no paramétrico (remuestreo)",
+             "Montecarlo con normalidad (referencia)",
+             "Simulación histórica directa (control)")
+res_ind <- rbind(var_es(PL_mc_np), var_es(PL_mc_n), var_es(PL_h_wal))
+
+tabla_ind <- data.frame(
+  Metodo = metodos,
+  VaR_MXN = round(res_ind[, "VaR"], 2),
+  VaR_Pct = round(res_ind[, "VaR"] / posicion * 100, 2),
+  ES_MXN = round(res_ind[, "ES"], 2),
+  ES_Pct = round(res_ind[, "ES"] / posicion * 100, 2),
+  row.names = NULL
+)
+tabla_ind
+
+VaR_ind <- res_ind[1, "VaR"]
+ES_ind <- res_ind[1, "ES"]
+```
+
+```{r}
+hist(PL_mc_np, breaks = 100, col = "lightsteelblue", border = "white",
+     main = "Pérdidas y ganancias a un día de 100,000 MXN en WALMEX (Montecarlo)",
+     xlab = "Pérdida / ganancia (MXN)", ylab = "Frecuencia")
+abline(v = c(VaR_ind, ES_ind), col = c("red", "darkred"), lwd = 2, lty = c(1, 2))
+legend("topright",
+       legend = c(paste0("VaR 99%: ", format(round(VaR_ind), big.mark = ","), " MXN"),
+                  paste0("ES 99%: ", format(round(ES_ind), big.mark = ","), " MXN")),
+       col = c("red", "darkred"), lwd = 2, lty = c(1, 2), bty = "n", cex = 0.85)
+```
+
+### 7.3. Interpretación
+
+Con 100,000 simulaciones, la pérdida máxima de nuestra posición en un día, con 99% de confianza, es de `r format(round(abs(VaR_ind)), big.mark = ",")` MXN, es decir, `r round(abs(VaR_ind) / posicion * 100, 2)`% de lo invertido. El Expected Shortfall es de `r format(round(abs(ES_ind)), big.mark = ",")` MXN (`r round(abs(ES_ind) / posicion * 100, 2)`% de la posición), o sea `r round(ES_ind / VaR_ind, 2)` veces el VaR. La diferencia importa: el VaR nos dice dónde empieza la cola, el ES nos dice cuánto se pierde en promedio cuando ya estamos dentro de ella.
+
+La simulación histórica directa nos sirve de control. Su VaR (`r format(round(abs(res_ind[3, "VaR"])), big.mark = ",")` MXN) difiere `r round(abs(VaR_ind / res_ind[3, "VaR"] - 1) * 100, 1)`% del Montecarlo, así que el remuestreo reproduce bien lo observado y la pequeña diferencia es ruido propio de simular (fijamos la semilla para que el resultado se pueda repetir).
+
+Al comparar con el Montecarlo normal, el VaR del remuestreo equivale a `r round(VaR_ind / res_ind[2, "VaR"], 2)` veces el normal y su ES a `r round(ES_ind / res_ind[2, "ES"], 2)` veces. Una razón mayor a 1 significa que la normalidad subestima el riesgo; con esto vemos en pesos el efecto de las colas pesadas que detectó Jarque-Bera en la Parte 3.
+
+Finalmente, el efecto de la diversificación se ve al comparar con el portafolio usando la misma muestra (2019 en adelante): por cada 100,000 MXN, el VaR histórico a un día al 99% del portafolio completo es de `r format(round(abs(as.numeric(VaR_SH_1d[3])) / 6), big.mark = ",")` MXN, frente a `r format(round(abs(VaR_wal19)), big.mark = ",")` MXN de tener todo en WALMEX, es decir, `r round((1 - (abs(as.numeric(VaR_SH_1d[3])) / 6) / abs(VaR_wal19)) * 100, 1)`% menos de riesgo por peso invertido.
+
+## Análisis e interpretación
+
+Para contestar las preguntas no nos quedamos con lo que dice la teoría: primero juntamos la evidencia del portafolio (forma de la distribución, peores días, violaciones y Expected Shortfall) y con ella contrastamos cada respuesta.
+
+```{r}
+fmt <- function(x) format(round(abs(x)), big.mark = ",")
+pv <- function(modelo, conf) resumen_bt$p_valor[resumen_bt$Modelo == modelo & resumen_bt$Confianza == conf]
+dec <- function(p) ifelse(p < 0.05, "se rechaza", "no se rechaza")
+
+# (a) Forma real de la distribución del portafolio (toda la muestra)
+r_p <- as.numeric(R_port)
+mu_p_h <- mean(r_p)
+sd_p_h <- sd(r_p)
+curtosis_p <- mean((r_p - mu_p_h)^4) / (mean((r_p - mu_p_h)^2))^2
+peor_sd <- (min(r_p) - mu_p_h) / sd_p_h
+fecha_peor <- as.character(index(R_port)[which.min(r_p)])
+prob_normal <- pnorm(peor_sd)
+anios_normal <- 1 / (prob_normal * 252)
+frec_cola <- mean(r_p < mu_p_h + qnorm(0.01) * sd_p_h)
+
+# (b) Los 10 peores días del periodo de backtesting y si cada VaR al 99% los cubrió
+orden <- order(PyG_real)[1:10]
+tabla_peores <- data.frame(
+  Fecha = fechas_eval[orden],
+  Perdida_MXN = round(PyG_real[orden], 0),
+  VaR99_SH = round(VaR_bt_SH[orden, "99%"], 0),
+  VaR99_Param = round(VaR_bt_P[orden, "99%"], 0),
+  Viola_SH = ifelse(viol_SH[orden, "99%"], "Sí", "No"),
+  Viola_Param = ifelse(viol_P[orden, "99%"], "Sí", "No"),
+  row.names = NULL
+)
+n_top_SH <- sum(viol_SH[orden, "99%"])
+n_top_P <- sum(viol_P[orden, "99%"])
+
+# (c) Qué tan exigente fue cada modelo
+vp_SH <- colMeans(VaR_bt_SH)
+vp_P <- colMeans(VaR_bt_P)
+dias_SH_mayor <- colMeans(VaR_bt_SH < VaR_bt_P)
+
+# (d) Qué pasó cuando falló cada modelo al 99%
+i99_P <- viol_P[, "99%"]
+i99_SH <- viol_SH[, "99%"]
+perd_viol_P <- mean(PyG_real[i99_P])
+var_viol_P <- mean(VaR_bt_P[i99_P, "99%"])
+anio_viol_P <- table(format(fechas_eval[i99_P], "%Y"))
+
+# (e) Expected Shortfall del portafolio a un día al 99%
+es_SH_1d <- mean(PL_hist[PL_hist <= VaR_SH_1d[3]])
+es_P_1d <- -V0 * sigma_p * dnorm(qnorm(0.01)) / 0.01
+```
+
+### ¿Qué diferencias observan entre el VaR paramétrico y el no paramétrico?
+
+En teoría, el paramétrico resume el riesgo en una sola cifra, la volatilidad de los últimos seis meses, y supone rendimientos normales; el histórico no supone nada y usa todo lo que ocurrió desde 2019. En los datos la diferencia se ve de inmediato: al 99% a un día el VaR histórico es de `r fmt(VaR_SH[1, 3])` MXN y el paramétrico de `r fmt(VaR_P[1, 3])` MXN, así que el histórico es `r round(VaR_SH[1, 3] / VaR_P[1, 3], 2)` veces el paramétrico. A 20 días la razón es de `r round(VaR_SH[4, 3] / VaR_P[4, 3], 2)`: el paramétrico escala con la raíz del horizonte, mientras que el histórico usa pérdidas acumuladas que realmente ocurrieron en ventanas de 20 días.
+
+La brecha se explica por la forma real de los rendimientos. Los del portafolio tienen una curtosis de `r round(curtosis_p, 2)` (la normal tiene 3) y su peor día, el `r fecha_peor`, cayó `r round(abs(peor_sd), 1)` desviaciones estándar. Bajo normalidad, un día así tendría probabilidad de `r format(prob_normal, digits = 2, scientific = TRUE)`, algo como una vez cada `r format(signif(anios_normal, 2), big.mark = ",", scientific = FALSE)` años, y aun así ocurrió en nuestra muestra de 2019 a 2026. Además, `r round(frec_cola * 100, 2)`% de los días superaron el umbral que la normal asigna al 1% de los casos. La normalidad no describe las colas del portafolio, y el VaR histórico, al usarlas tal cual, lo refleja.
+
+### ¿Cuál modelo captura mejor los eventos extremos?
+
+Para contrastarlo tomamos los 10 peores días del periodo de backtesting y vimos si el VaR al 99% de cada modelo los cubrió.
+
+```{r}
+tabla_peores
+```
+
+Los peores días se concentran en pocos episodios de estrés, y ahí ambos modelos fallan con frecuencia: el VaR histórico fue rebasado en `r n_top_SH` de esos 10 días y el paramétrico en `r n_top_P`, porque en un choque repentino ninguno tiene todavía la información del golpe. La diferencia aparece en el panorama completo: en todo el periodo, al 99% el histórico tuvo `r obs_SH[3]` violaciones y el paramétrico `r obs_P[3]`, contra `r round(esperadas[3], 1)` esperadas. Cuando el paramétrico falló, la pérdida promedio fue de `r fmt(perd_viol_P)` MXN contra un VaR promedio de `r fmt(var_viol_P)` MXN en esos días, es decir, `r round(perd_viol_P / var_viol_P, 2)` veces lo que el modelo anticipaba.
+
+El Expected Shortfall cuenta lo mismo: el ES histórico a un día al 99% es de `r fmt(es_SH_1d)` MXN (`r round(as.numeric(es_SH_1d / VaR_SH_1d[3]), 2)` veces su VaR) mientras que bajo normalidad es de `r fmt(es_P_1d)` MXN (`r round(as.numeric(es_P_1d / VaR_P_1d[3]), 2)` veces). Con los datos, el histórico captura mejor los eventos extremos.
+
+Eso sí, tiene un punto débil que también se ve en los datos: el año con más violaciones del paramétrico fue `r names(which.max(anio_viol_P))` (`r max(anio_viol_P)` de `r sum(anio_viol_P)`), lo que es coherente con lo visto en la Parte 4: la volatilidad se agrupa, y una desviación estándar de seis meses se entera tarde de que cambió el régimen. El histórico, con memoria larga, tampoco se adapta rápido; simplemente tiene un colchón más grande.
+
+### ¿Qué modelo es más conservador?
+
+El histórico. En el backtesting su VaR al 99% promedió `r fmt(vp_SH["99%"])` MXN contra `r fmt(vp_P["99%"])` MXN del paramétrico, y fue el más exigente en `r round(dias_SH_mayor["99%"] * 100, 1)`% de los días. La consecuencia se ve en las violaciones: `r obs_SH[3]` frente a `r round(esperadas[3], 1)` esperadas, mientras el paramétrico se pasó con `r obs_P[3]`.
+
+Ser conservador también tiene un costo. Al 97.5% el histórico tuvo `r obs_SH[2]` violaciones contra `r round(esperadas[2], 1)` esperadas (p-valor de Kupiec = `r round(pv("Simulación Histórica", "97.5%"), 4)`): cuando un modelo se queda tan por debajo de lo esperado, está pidiendo más capital del necesario.
+
+### ¿Qué implicaciones tiene elegir un modelo que subestima el riesgo?
+
+En teoría, se reservan menos recursos de los necesarios y se toman posiciones más grandes de lo que conviene, con una falsa sensación de seguridad. En nuestros datos esto fue concreto: el paramétrico al 99% fue rebasado `r obs_P[3]` veces, `r round(obs_P[3] / esperadas[3], 2)` veces lo esperado, y en esas jornadas la pérdida real superó en promedio `r round((perd_viol_P / var_viol_P - 1) * 100, 1)`% al VaR estimado. Un capital fijado con ese VaR habría resultado insuficiente justo en los días en que más se necesitaba.
+
+El problema es asimétrico: sobreestimar el riesgo cuesta capital inmovilizado, pero subestimarlo puede costar una pérdida que no estaba prevista. Además, el VaR no dice cuánto se pierde después de rebasarlo, y ahí es donde el ES muestra la diferencia entre ambos modelos (`r fmt(es_SH_1d)` MXN contra `r fmt(es_P_1d)` MXN en el portafolio).
+
+### ¿Qué resultados arroja el backtesting y qué concluyen de ello?
+
+Con `r format(n_eval, big.mark = ",")` días evaluados, los resultados fueron:
+
+- **95%:** histórico `r obs_SH[1]` violaciones y paramétrico `r obs_P[1]`, contra `r round(esperadas[1], 1)` esperadas. En la prueba de Kupiec `r dec(pv("Simulación Histórica", "95%"))` la calibración del histórico y `r dec(pv("Paramétrico Normal", "95%"))` la del paramétrico.
+- **97.5%:** histórico `r obs_SH[2]` y paramétrico `r obs_P[2]`, contra `r round(esperadas[2], 1)` esperadas. En la prueba de Kupiec `r dec(pv("Simulación Histórica", "97.5%"))` la calibración del histórico y `r dec(pv("Paramétrico Normal", "97.5%"))` la del paramétrico.
+- **99%:** histórico `r obs_SH[3]` y paramétrico `r obs_P[3]`, contra `r round(esperadas[3], 1)` esperadas. En la prueba de Kupiec `r dec(pv("Simulación Histórica", "99%"))` la calibración del histórico y `r dec(pv("Paramétrico Normal", "99%"))` la del paramétrico.
+
+Concluimos que ningún modelo es perfecto, pero se equivocan de forma distinta: el histórico se queda corto en violaciones (es prudente), mientras que el paramétrico se pasa justo en la cola donde más importa. Para el nivel del 99% el histórico tuvo el mejor desempeño.
+
+## 8. Conclusiones
+
+Al comparar las dos metodologías nos quedamos con que la diferencia no está en las fórmulas, sino en lo que cada una cree de los datos. El paramétrico asume que los rendimientos son normales y que la volatilidad de los últimos seis meses basta para describir el riesgo; el histórico asume que lo que ya pasó es una buena muestra de lo que puede pasar. En nuestro portafolio, la normalidad falló justo donde importa: en las colas. Por eso el VaR histórico al 99% fue `r round(VaR_SH[1, 3] / VaR_P[1, 3], 2)` veces el paramétrico y el paramétrico tuvo `r obs_P[3]` violaciones contra `r round(esperadas[3], 1)` esperadas.
+
+En la práctica usaríamos la simulación histórica como medida principal, sobre todo al 99%, para fijar límites y reservas, porque fue la que se mantuvo en línea con lo observado en las pérdidas extremas. La acompañaríamos con el Expected Shortfall, que dice cuánto se pierde cuando el VaR falla (en WALMEX individual, `r format(round(abs(ES_ind)), big.mark = ",")` MXN frente a un VaR de `r format(round(abs(VaR_ind)), big.mark = ",")` MXN). El paramétrico lo dejaríamos como indicador diario de monitoreo, porque se ajusta rápido, y lo mejoraríamos usando una volatilidad dinámica (EWMA o GARCH, como en la Parte 4) en lugar de una desviación estándar fija de seis meses.
+
+La diversificación y la optimización nos dejaron una lección parecida. Tener las mismas posiciones dentro del portafolio redujo el VaR por peso invertido frente a concentrarse en WALMEX, pero optimizar con seis meses de datos bajó el VaR paramétrico `r round(abs((VaR_P_opt_1d[3] / VaR_P_1d[3] - 1) * 100), 1)`% y el VaR histórico varió `r sprintf("%+.1f", (VaR_SH_opt_1d[3] / VaR_SH_1d[3] - 1) * 100)`%. Es decir, una composición óptima para una muestra corta no necesariamente lo es para todo el historial, y no conviene tomarla como definitiva.
+
+Por último, reconocemos las limitaciones de este ejercicio: los mercados de México y Estados Unidos tienen calendarios distintos, usamos pesos constantes en lugar de una estrategia real de compra y mantenimiento, evaluamos un solo portafolio y el VaR no mide qué tan grave es la pérdida cuando se rebasa. Lo más valioso que nos llevamos es el contraste entre teoría y realidad: un modelo puede ser elegante y fácil de calcular, pero si sus supuestos no se cumplen en las colas, el riesgo que reporta es más pequeño que el que realmente enfrentamos.
